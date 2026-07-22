@@ -8,6 +8,7 @@ window.APP_CONFIG = {
   DEFAULT_SITE_NAME: "Sion Lang DH",
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",
+  TEACHING_DRAW_BACKGROUND: "./assets/images/teaching-draw-background.jpg",
   SERVICE_ORDER: {
     morning: 0,
     afternoon: 1,

@@ -1,29 +1,34 @@
 (function () {
   const config = window.APP_CONFIG;
+  const storage = window.sessionStorage;
 
   function saveSession(token, user, expiresAt) {
-    localStorage.setItem(config.SESSION_TOKEN_KEY, token);
-    localStorage.setItem(
+    storage.setItem(config.SESSION_TOKEN_KEY, token);
+    storage.setItem(
       config.SESSION_USER_KEY,
       JSON.stringify(user || {})
     );
 
     if (expiresAt) {
-      localStorage.setItem(
+      storage.setItem(
         config.SESSION_EXPIRES_KEY,
         String(expiresAt)
       );
     } else {
-      localStorage.removeItem(config.SESSION_EXPIRES_KEY);
+      storage.removeItem(config.SESSION_EXPIRES_KEY);
     }
+
+    localStorage.removeItem(config.SESSION_TOKEN_KEY);
+    localStorage.removeItem(config.SESSION_USER_KEY);
+    localStorage.removeItem(config.SESSION_EXPIRES_KEY);
   }
 
   function getToken() {
-    return localStorage.getItem(config.SESSION_TOKEN_KEY) || "";
+    return storage.getItem(config.SESSION_TOKEN_KEY) || "";
   }
 
   function getUser() {
-    const rawUser = localStorage.getItem(
+    const rawUser = storage.getItem(
       config.SESSION_USER_KEY
     );
 
@@ -41,14 +46,33 @@
 
   function getExpiresAt() {
     return (
-      localStorage.getItem(config.SESSION_EXPIRES_KEY) || ""
+      storage.getItem(config.SESSION_EXPIRES_KEY) || ""
     );
   }
 
   function clearSession() {
+    storage.removeItem(config.SESSION_TOKEN_KEY);
+    storage.removeItem(config.SESSION_USER_KEY);
+    storage.removeItem(config.SESSION_EXPIRES_KEY);
     localStorage.removeItem(config.SESSION_TOKEN_KEY);
     localStorage.removeItem(config.SESSION_USER_KEY);
     localStorage.removeItem(config.SESSION_EXPIRES_KEY);
+
+    if (window.SionTeachingHistory) {
+      window.SionTeachingHistory.clearAll();
+    } else {
+      const historyKeys = [];
+
+      for (let index = 0; index < sessionStorage.length; index += 1) {
+        const key = sessionStorage.key(index);
+
+        if (key && key.startsWith("mother-teaching-history:")) {
+          historyKeys.push(key);
+        }
+      }
+
+      historyKeys.forEach((key) => sessionStorage.removeItem(key));
+    }
   }
 
   function isExpired() {

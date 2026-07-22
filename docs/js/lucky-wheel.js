@@ -1,136 +1,105 @@
 (function () {
-  const STORAGE_KEY = "sion-lang-dh-lucky-wheel-names";
-  const COLORS = ["#233f98", "#edf2ff", "#d2ad57", "#d8e1f3", "#173173", "#f1f4f9"];
+  const COLORS = [
+    "#173173",
+    "#edf2ff",
+    "#d2ad57",
+    "#f7efe0",
+    "#233f98",
+    "#ffffff"
+  ];
 
-  let names = [];
-  let wheels = [];
+  let teachings = [];
+  let currentUser = null;
   let currentRotation = 0;
-  let isSpinning = false;
-  let winnerIndex = -1;
+  let isDrawing = false;
+  let lastFocusedElement = null;
 
   function getElements() {
     return {
-      nameInput: document.getElementById("nameInput"),
-      wheelSelect: document.getElementById("wheelSelect"),
-      updateListButton: document.getElementById("updateListButton"),
-      resetButton: document.getElementById("resetButton"),
-      spinButton: document.getElementById("spinButton"),
-      removeWinnerButton: document.getElementById("removeWinnerButton"),
-      nameCountText: document.getElementById("nameCountText"),
-      wheelStatus: document.getElementById("wheelStatus"),
-      winnerText: document.getElementById("winnerText"),
-      canvas: document.getElementById("wheelCanvas")
+      canvas: document.getElementById("teachingCanvas"),
+      drawButton: document.getElementById("drawButton"),
+      drawStatus: document.getElementById("drawStatus"),
+      latestResultText: document.getElementById("latestResultText"),
+      resultBox: document.getElementById("resultBox"),
+      historyList: document.getElementById("historyList"),
+      modalOverlay: document.getElementById("teachingModalOverlay"),
+      modal: document.getElementById("teachingModal"),
+      modalTeachingNumber: document.getElementById("modalTeachingNumber"),
+      modalTeachingContent: document.getElementById("modalTeachingContent"),
+      modalCloseIcon: document.getElementById("modalCloseIcon"),
+      modalCloseButton: document.getElementById("modalCloseButton")
     };
   }
 
-  function parseNames(value) {
-    const seen = new Set();
-
-    return String(value || "")
-      .split(/\r?\n/)
-      .map((name) => name.trim())
-      .filter(Boolean)
-      .filter((name) => {
-        const key = name.toLocaleLowerCase("vi");
-        if (seen.has(key)) {
-          return false;
-        }
-        seen.add(key);
-        return true;
-      });
-  }
-
-  function saveNames() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(names));
-  }
-
-  function loadNames() {
-    try {
-      const savedNames = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      return Array.isArray(savedNames) ? savedNames.filter((name) => typeof name === "string" && name.trim()) : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
   function setStatus(message, tone = "info") {
-    const { wheelStatus } = getElements();
-    wheelStatus.textContent = message;
-    wheelStatus.classList.toggle("is-error", tone === "error");
+    const { drawStatus } = getElements();
+    drawStatus.textContent = message;
+    drawStatus.classList.toggle("is-error", tone === "error");
   }
 
-  function updateCountText() {
-    const { nameCountText } = getElements();
-    nameCountText.textContent = `${names.length} người trong danh sách.`;
+  function prefersReducedMotion() {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function setSpinEnabled(isEnabled) {
-    const { spinButton } = getElements();
-    spinButton.disabled = !isEnabled;
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
-  function populateWheelSelect() {
-    const { wheelSelect } = getElements();
+  function formatTime(value) {
+    const date = new Date(value);
 
-    wheelSelect.innerHTML = wheels
-      .map((wheel, index) => `<option value="${index}">${wheel.title || `Vòng quay ${index + 1}`}</option>`)
-      .join("");
-
-    wheelSelect.disabled = wheels.length <= 1;
-  }
-
-  function applyWheel(index) {
-    const wheel = wheels[index];
-    winnerIndex = -1;
-    currentRotation = 0;
-
-    if (!wheel) {
-      names = [];
-      syncListToUi();
-      setSpinEnabled(false);
-      setStatus("Chưa có vòng quay nào từ API.", "error");
-      return;
+    if (Number.isNaN(date.getTime())) {
+      return "";
     }
 
-    names = Array.isArray(wheel.participants)
-      ? wheel.participants.map((name) => String(name).trim()).filter(Boolean)
-      : [];
-
-    syncListToUi();
-    setSpinEnabled(names.length > 0);
-    setStatus(names.length > 0 ? `Đã tải ${wheel.title || "vòng quay"}.` : "Vòng quay này chưa có người tham gia.", names.length > 0 ? "info" : "error");
+    return new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    }).format(date);
   }
 
-  async function loadWheelsFromApi() {
-    const { wheelSelect } = getElements();
+  function getRandomIndex(length) {
+    if (length <= 0) {
+      return -1;
+    }
 
-    try {
-      const data = await window.SionApi.getWheels();
-      wheels = Array.isArray(data.wheels) ? data.wheels : [];
-      populateWheelSelect();
+    if (window.crypto && window.crypto.getRandomValues) {
+      const maxUint32 = 0xffffffff;
+      const limit = Math.floor((maxUint32 + 1) / length) * length;
+      const randomValues = new Uint32Array(1);
 
-      if (wheels.length === 0) {
-        applyWheel(-1);
-        return;
-      }
+      do {
+        window.crypto.getRandomValues(randomValues);
+      } while (randomValues[0] >= limit);
 
-      wheelSelect.value = "0";
-      applyWheel(0);
-    } catch (error) {
-      const localNames = loadNames();
-      wheels = localNames.length > 0
-        ? [{ wheelId: "local-fallback", title: "Dữ liệu cục bộ", participants: localNames }]
-        : [];
-      populateWheelSelect();
+      return randomValues[0] % length;
+    }
 
-      if (wheels.length === 0) {
-        applyWheel(-1);
-        setStatus("Không tải được danh sách vòng quay và chưa có dữ liệu cục bộ.", "error");
-        return;
-      }
+    return Math.floor(Math.random() * length);
+  }
 
-      applyWheel(0);
-      setStatus("Không tải được API vòng quay. Đang dùng dữ liệu cục bộ trong trình duyệt.", "error");
+  function normalizeTeachings() {
+    return Array.isArray(window.MOTHER_TEACHINGS)
+      ? window.MOTHER_TEACHINGS
+        .filter((teaching) => teaching && Number.isInteger(teaching.number) && teaching.content)
+        .slice(0, 13)
+      : [];
+  }
+
+  function applyBackgroundFromConfig() {
+    const imagePath = window.APP_CONFIG && window.APP_CONFIG.TEACHING_DRAW_BACKGROUND;
+
+    if (imagePath) {
+      document.body.style.setProperty("--teaching-background-image", `url("${imagePath}")`);
     }
   }
 
@@ -143,10 +112,10 @@
 
     context.clearRect(0, 0, size, size);
 
-    if (names.length === 0) {
-      context.fillStyle = "#ffffff";
+    if (teachings.length === 0) {
       context.beginPath();
       context.arc(center, center, radius, 0, Math.PI * 2);
+      context.fillStyle = "#ffffff";
       context.fill();
       context.strokeStyle = "rgba(31, 49, 91, 0.18)";
       context.lineWidth = 2;
@@ -155,15 +124,16 @@
       context.font = "bold 30px Segoe UI";
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.fillText("Nhập danh sách", center, center);
+      context.fillText("Chưa có dữ liệu", center, center);
       return;
     }
 
-    const arc = (Math.PI * 2) / names.length;
+    const arc = (Math.PI * 2) / teachings.length;
 
-    names.forEach((name, index) => {
+    teachings.forEach((teaching, index) => {
       const startAngle = -Math.PI / 2 + index * arc + currentRotation;
       const endAngle = startAngle + arc;
+      const isDarkSegment = index % COLORS.length === 0 || index % COLORS.length === 4;
 
       context.beginPath();
       context.moveTo(center, center);
@@ -180,82 +150,152 @@
       context.rotate(startAngle + arc / 2);
       context.textAlign = "right";
       context.textBaseline = "middle";
-      context.fillStyle = index % COLORS.length === 0 || index % COLORS.length === 4 ? "#ffffff" : "#20283a";
-      context.font = "bold 24px Segoe UI";
-      context.fillText(name.slice(0, 18), radius - 20, 0);
+      context.fillStyle = isDarkSegment ? "#ffffff" : "#173173";
+      context.font = "900 42px Segoe UI";
+      context.fillText(String(teaching.number), radius - 42, 0);
       context.restore();
     });
 
     context.beginPath();
-    context.arc(center, center, 52, 0, Math.PI * 2);
+    context.arc(center, center, 58, 0, Math.PI * 2);
     context.fillStyle = "#ffffff";
     context.fill();
-    context.strokeStyle = "rgba(31, 49, 91, 0.16)";
+    context.strokeStyle = "rgba(31, 49, 91, 0.18)";
     context.lineWidth = 2;
     context.stroke();
+
+    context.fillStyle = "#d2ad57";
+    context.font = "900 28px Segoe UI";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("13", center, center - 4);
   }
 
-  function syncListToUi() {
-    const { nameInput, removeWinnerButton, winnerText } = getElements();
-    nameInput.value = names.join("\n");
-    updateCountText();
-    drawWheel();
+  function renderHistory() {
+    const { historyList } = getElements();
+    const history = window.SionTeachingHistory.load(currentUser);
 
-    if (winnerIndex < 0 || !names[winnerIndex]) {
-      removeWinnerButton.disabled = true;
-      winnerText.textContent = "Chưa quay";
-    }
-  }
-
-  function updateNamesFromInput() {
-    const { nameInput } = getElements();
-    names = parseNames(nameInput.value);
-    winnerIndex = -1;
-    saveNames();
-    syncListToUi();
-
-    if (names.length === 0) {
-      setStatus("Danh sách đang trống. Hãy nhập ít nhất một tên hợp lệ.", "error");
-      setSpinEnabled(false);
+    if (history.length === 0) {
+      historyList.innerHTML = '<p class="history-empty">Chưa có lượt bốc thăm nào trong phiên này.</p>';
       return;
     }
 
-    setSpinEnabled(true);
-    setStatus("Đã cập nhật danh sách.");
+    historyList.innerHTML = history
+      .map((item) => {
+        const number = escapeHtml(item.teachingNumber);
+        const time = escapeHtml(formatTime(item.createdAt));
+        return `
+          <article class="history-item">
+            <span class="history-number">Giáo huấn số ${number}</span>
+            <span class="history-time">${time}</span>
+          </article>
+        `;
+      })
+      .join("");
   }
 
-  function spinWheel() {
-    const { spinButton, removeWinnerButton, winnerText } = getElements();
-    const resultBox = document.getElementById("resultBox");
+  function createHistoryItem(teaching) {
+    const idSource = window.crypto && window.crypto.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-    if (isSpinning) {
+    return {
+      id: idSource,
+      teachingNumber: teaching.number,
+      createdAt: new Date().toISOString()
+    };
+  }
+
+  function setDrawButtonLoading(isLoading) {
+    const { drawButton } = getElements();
+    drawButton.disabled = isLoading || teachings.length === 0;
+    drawButton.textContent = isLoading ? "Đang bốc thăm..." : "Bốc thăm";
+  }
+
+  function openModal(teaching) {
+    const {
+      modalOverlay,
+      modal,
+      modalTeachingNumber,
+      modalTeachingContent
+    } = getElements();
+
+    lastFocusedElement = document.activeElement;
+    modalTeachingNumber.textContent = String(teaching.number);
+    modalTeachingContent.textContent = teaching.content;
+    modalOverlay.hidden = false;
+    document.body.classList.add("modal-open");
+    modal.focus();
+  }
+
+  function closeModal() {
+    const { modalOverlay } = getElements();
+    modalOverlay.hidden = true;
+    document.body.classList.remove("modal-open");
+
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+      lastFocusedElement.focus();
+    }
+  }
+
+  function finishDraw(teaching, targetRotation) {
+    const { latestResultText, resultBox } = getElements();
+    currentRotation = targetRotation % (Math.PI * 2);
+    isDrawing = false;
+    latestResultText.textContent = `Giáo huấn số ${teaching.number}`;
+    window.SionTeachingHistory.add(currentUser, createHistoryItem(teaching));
+    renderHistory();
+
+    if (resultBox) {
+      resultBox.classList.remove("is-highlight");
+      window.requestAnimationFrame(() => resultBox.classList.add("is-highlight"));
+    }
+
+    setDrawButtonLoading(false);
+    setStatus(`Bạn đã bốc được Giáo huấn số ${teaching.number}.`);
+    openModal(teaching);
+  }
+
+  function startTeachingDraw() {
+    if (isDrawing) {
       return;
     }
 
-    if (names.length === 0) {
-      setStatus("Không thể quay khi danh sách trống.", "error");
+    if (!window.SionAuth.isLoggedIn()) {
+      setStatus("Vui lòng đăng nhập lại trước khi bốc thăm.", "error");
       return;
     }
 
-    winnerIndex = Math.floor(Math.random() * names.length);
-    const arc = (Math.PI * 2) / names.length;
-    const winnerMidAngle = -Math.PI / 2 + winnerIndex * arc + arc / 2;
-    let targetRotation = -Math.PI / 2 - winnerMidAngle;
+    if (teachings.length !== 13) {
+      setStatus("Dữ liệu Giáo huấn chưa sẵn sàng.", "error");
+      return;
+    }
+
+    const selectedIndex = getRandomIndex(teachings.length);
+    const selectedTeaching = teachings[selectedIndex];
+    const arc = (Math.PI * 2) / teachings.length;
+    const selectedMidAngle = -Math.PI / 2 + selectedIndex * arc + arc / 2;
+    let targetRotation = -Math.PI / 2 - selectedMidAngle;
 
     while (targetRotation < currentRotation + Math.PI * 8) {
       targetRotation += Math.PI * 2;
     }
 
+    isDrawing = true;
+    setDrawButtonLoading(true);
+    setStatus("Đang bốc thăm...");
+
+    if (prefersReducedMotion()) {
+      currentRotation = targetRotation;
+      drawWheel();
+      finishDraw(selectedTeaching, targetRotation);
+      return;
+    }
+
     const startRotation = currentRotation;
     const rotationDelta = targetRotation - startRotation;
-    const duration = 3800;
+    const duration = 3600;
     const startedAt = performance.now();
-
-    isSpinning = true;
-    spinButton.disabled = true;
-    removeWinnerButton.disabled = true;
-    winnerText.textContent = "Đang quay...";
-    setStatus("Đang quay...");
 
     function animate(now) {
       const progress = Math.min((now - startedAt) / duration, 1);
@@ -265,79 +305,63 @@
       drawWheel();
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        window.requestAnimationFrame(animate);
         return;
       }
 
-      currentRotation = targetRotation % (Math.PI * 2);
-      isSpinning = false;
-      spinButton.disabled = false;
-      removeWinnerButton.disabled = false;
-      winnerText.textContent = names[winnerIndex];
-      if (resultBox) {
-        resultBox.classList.remove("is-highlight");
-        window.requestAnimationFrame(() => resultBox.classList.add("is-highlight"));
-      }
-      setStatus(`Kết quả: ${names[winnerIndex]}.`);
+      finishDraw(selectedTeaching, targetRotation);
     }
 
-    requestAnimationFrame(animate);
+    window.requestAnimationFrame(animate);
   }
 
-  function removeWinner() {
-    const { removeWinnerButton } = getElements();
+  function bindModalEvents() {
+    const { modalOverlay, modalCloseIcon, modalCloseButton } = getElements();
 
-    if (winnerIndex < 0 || !names[winnerIndex]) {
+    modalCloseIcon.addEventListener("click", closeModal);
+    modalCloseButton.addEventListener("click", closeModal);
+
+    modalOverlay.addEventListener("click", (event) => {
+      if (event.target === modalOverlay) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modalOverlay.hidden) {
+        closeModal();
+      }
+    });
+  }
+
+  function initUi() {
+    const { drawButton } = getElements();
+    teachings = normalizeTeachings();
+    applyBackgroundFromConfig();
+    drawWheel();
+    renderHistory();
+    setDrawButtonLoading(false);
+
+    if (teachings.length !== 13) {
+      setStatus("Cần đủ 13 Giáo huấn trước khi sử dụng.", "error");
+      drawButton.disabled = true;
       return;
     }
 
-    const removedName = names[winnerIndex];
-    names.splice(winnerIndex, 1);
-    winnerIndex = -1;
-    saveNames();
-    removeWinnerButton.disabled = true;
-    syncListToUi();
-    setStatus(`Đã xóa ${removedName} khỏi danh sách.`);
+    drawButton.addEventListener("click", startTeachingDraw);
+    bindModalEvents();
   }
 
-  function resetWheel() {
-    const { nameInput, removeWinnerButton, winnerText } = getElements();
-    names = [];
-    currentRotation = 0;
-    winnerIndex = -1;
-    localStorage.removeItem(STORAGE_KEY);
-    nameInput.value = "";
-    removeWinnerButton.disabled = true;
-    winnerText.textContent = "Chưa quay";
-    updateCountText();
-    drawWheel();
-    setSpinEnabled(false);
-    setStatus("Đã đặt lại vòng quay.");
-  }
-
-  function initLuckyWheel() {
-    const { updateListButton, resetButton, spinButton, removeWinnerButton, nameInput, wheelSelect } = getElements();
-
+  function initTeachingDraw() {
     window.SionRouteGuard.requireAuth().then((user) => {
       if (!user) {
         return;
       }
 
-      loadWheelsFromApi();
+      currentUser = user;
+      initUi();
     });
-
-    names = [];
-    nameInput.value = "";
-    updateCountText();
-    drawWheel();
-    setSpinEnabled(false);
-
-    updateListButton.addEventListener("click", updateNamesFromInput);
-    resetButton.addEventListener("click", resetWheel);
-    spinButton.addEventListener("click", spinWheel);
-    removeWinnerButton.addEventListener("click", removeWinner);
-    wheelSelect.addEventListener("change", () => applyWheel(Number(wheelSelect.value)));
   }
 
-  document.addEventListener("DOMContentLoaded", initLuckyWheel);
+  document.addEventListener("DOMContentLoaded", initTeachingDraw);
 })();

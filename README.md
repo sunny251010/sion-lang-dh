@@ -40,6 +40,14 @@ docs/assets/images/login-background.jpg
 
 Neu chua co file nay, login page se dung fallback gradient.
 
+Anh nen trang Boc tham Giao huan dung duong dan:
+
+```text
+docs/assets/images/teaching-draw-background.jpg
+```
+
+Neu chua co file nay, trang van hien fallback gradient/overlay.
+
 ## Cau hinh API
 
 Frontend doc Apps Script API tu:
@@ -109,7 +117,7 @@ Khi sua backend:
 - `docs/login.html`: Dang nhap bang Apps Script API, luu token trong `sessionStorage`.
 - `docs/home.html`: Home sau dang nhap, doc `publicSettings`.
 - `docs/tab-generator.html`: Tai `action=program`, xem truoc danh sach tab, chon tab va mo tab bang `window.open(url, "_blank", "noopener,noreferrer")`.
-- `docs/lucky-wheel.html`: Tai `action=wheels`; neu API loi thi fallback ve danh sach cuc bo trong `localStorage`.
+- `docs/lucky-wheel.html`: Trang Boc tham Giao huan. Du lieu 13 Giao huan nam trong `docs/js/mother-teachings.js`, lich su phien nam trong `sessionStorage`.
 - `docs/admin/index.html`: Dashboard admin.
 - `docs/admin/settings.html`: Goi admin settings API va cap nhat tung key.
 - `docs/admin/wheels.html`: Tao, sua va xoa mem wheel qua admin API.
@@ -129,5 +137,5 @@ Khi sua backend:
 3. Dang nhap user thuong, kiem tra ve `home.html` va khong thay link admin.
 4. Dang nhap admin, kiem tra ve `admin/index.html` va mo duoc `settings.html`, `wheels.html`.
 5. Mo `tab-generator.html`, kiem tra API `action=program` tai du 3 buoi va khong mo `about:blank`.
-6. Mo `lucky-wheel.html`, kiem tra `action=wheels` tai duoc dropdown wheel.
+6. Mo `lucky-wheel.html`, bam `Boc tham`, kiem tra modal ket qua va lich su phien theo user.
 7. Dong tab/trinh duyet, session frontend se mat vi dung `sessionStorage`.
