@@ -43,7 +43,7 @@
   }
 
   function redirectAfterLogin(user) {
-    window.location.href = user && user.role === "admin" ? "./admin/index.html" : "./home.html";
+    window.location.href = "./home.html";
   }
 
   function initLogin() {
@@ -55,6 +55,7 @@
     const loginForm = document.getElementById("loginForm");
     const password = document.getElementById("password");
     const togglePasswordButton = document.getElementById("togglePasswordButton");
+    const rememberLogin = document.getElementById("rememberLogin");
 
     applyPublicSettings();
 
@@ -72,10 +73,11 @@
       const formData = new FormData(loginForm);
       const userId = String(formData.get("userId") || "").trim();
       const passwordValue = String(formData.get("password") || "");
+      const shouldRemember = Boolean(rememberLogin && rememberLogin.checked);
 
       try {
         const result = await window.SionApi.login(userId, passwordValue);
-        window.SionAuth.saveSession(result.token, result.user, result.expiresAt);
+        window.SionAuth.saveSession(result.token, result.user, result.expiresAt, shouldRemember);
         redirectAfterLogin(result.user);
       } catch (error) {
         setLoginError("Không đăng nhập được. Vui lòng kiểm tra ID và mật khẩu.");

@@ -39,6 +39,19 @@
   min-width: 0;
 }
 
+.remember-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.remember-row input {
+  width: auto;
+}
+
 .login-error,
 .maintenance-box {
   display: none;

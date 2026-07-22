@@ -11,10 +11,6 @@
     return `${getBasePath()}/home.html`;
   }
 
-  function toAdminPath() {
-    return `${getBasePath()}/admin/index.html`;
-  }
-
   function redirect(path) {
     window.location.replace(path);
   }
@@ -35,7 +31,7 @@
     try {
       const data = await window.SionApi.getCurrentUser(token);
       const user = normalizeUserResponse(data);
-      window.SionAuth.saveSession(token, user, data.expiresAt);
+      window.SionAuth.saveSession(token, user, data.expiresAt, window.SionAuth.hasPersistentSession());
       return user;
     } catch (error) {
       window.SionAuth.clearSession();
@@ -44,28 +40,13 @@
     }
   }
 
-  async function requireAdmin() {
-    const user = await requireAuth();
-    if (!user) {
-      return null;
-    }
-
-    if (user.role !== "admin") {
-      redirect(toHomePath());
-      return null;
-    }
-
-    return user;
-  }
-
   function redirectFromIndex() {
     if (!window.SionAuth.isLoggedIn()) {
       redirect("./login.html");
       return;
     }
 
-    const user = window.SionAuth.getUser();
-    redirect(user && user.role === "admin" ? "./admin/index.html" : "./home.html");
+    redirect("./home.html");
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -76,7 +57,6 @@
 
   window.SionRouteGuard = {
     requireAuth,
-    requireAdmin,
     redirectFromIndex
   };
 })();

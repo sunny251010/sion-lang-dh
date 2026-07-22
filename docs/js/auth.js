@@ -1,8 +1,9 @@
 (function () {
   const config = window.APP_CONFIG;
-  const storage = window.sessionStorage;
+  const sessionStorageRef = window.sessionStorage;
+  const persistentStorage = window.localStorage;
 
-  function saveSession(token, user, expiresAt) {
+  function writeSession(storage, token, user, expiresAt) {
     storage.setItem(config.SESSION_TOKEN_KEY, token);
     storage.setItem(
       config.SESSION_USER_KEY,
@@ -17,18 +18,41 @@
     } else {
       storage.removeItem(config.SESSION_EXPIRES_KEY);
     }
+  }
 
-    localStorage.removeItem(config.SESSION_TOKEN_KEY);
-    localStorage.removeItem(config.SESSION_USER_KEY);
-    localStorage.removeItem(config.SESSION_EXPIRES_KEY);
+  function clearStorage(storage) {
+    storage.removeItem(config.SESSION_TOKEN_KEY);
+    storage.removeItem(config.SESSION_USER_KEY);
+    storage.removeItem(config.SESSION_EXPIRES_KEY);
+  }
+
+  function hasPersistentSession() {
+    return Boolean(persistentStorage.getItem(config.SESSION_TOKEN_KEY));
+  }
+
+  function getActiveStorage() {
+    return sessionStorageRef.getItem(config.SESSION_TOKEN_KEY)
+      ? sessionStorageRef
+      : persistentStorage;
+  }
+
+  function saveSession(token, user, expiresAt, remember = false) {
+    writeSession(sessionStorageRef, token, user, expiresAt);
+
+    if (remember) {
+      writeSession(persistentStorage, token, user, expiresAt);
+      return;
+    }
+
+    clearStorage(persistentStorage);
   }
 
   function getToken() {
-    return storage.getItem(config.SESSION_TOKEN_KEY) || "";
+    return getActiveStorage().getItem(config.SESSION_TOKEN_KEY) || "";
   }
 
   function getUser() {
-    const rawUser = storage.getItem(
+    const rawUser = getActiveStorage().getItem(
       config.SESSION_USER_KEY
     );
 
@@ -46,17 +70,13 @@
 
   function getExpiresAt() {
     return (
-      storage.getItem(config.SESSION_EXPIRES_KEY) || ""
+      getActiveStorage().getItem(config.SESSION_EXPIRES_KEY) || ""
     );
   }
 
   function clearSession() {
-    storage.removeItem(config.SESSION_TOKEN_KEY);
-    storage.removeItem(config.SESSION_USER_KEY);
-    storage.removeItem(config.SESSION_EXPIRES_KEY);
-    localStorage.removeItem(config.SESSION_TOKEN_KEY);
-    localStorage.removeItem(config.SESSION_USER_KEY);
-    localStorage.removeItem(config.SESSION_EXPIRES_KEY);
+    clearStorage(sessionStorageRef);
+    clearStorage(persistentStorage);
 
     if (window.SionTeachingHistory) {
       window.SionTeachingHistory.clearAll();
@@ -107,15 +127,6 @@
     return true;
   }
 
-  function isAdmin() {
-    const user = getUser();
-
-    return Boolean(
-      user &&
-      String(user.role || "").toLowerCase() === "admin"
-    );
-  }
-
   async function logout() {
     const token = getToken();
 
@@ -138,10 +149,10 @@
     getToken,
     getUser,
     getExpiresAt,
+    hasPersistentSession,
     clearSession,
     isExpired,
     isLoggedIn,
-    isAdmin,
     logout
   };
 })();

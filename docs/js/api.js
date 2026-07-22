@@ -63,10 +63,6 @@
     return requestJson(buildUrl("publicSettings"));
   }
 
-  function getWheels() {
-    return requestJson(buildUrl("wheels"));
-  }
-
   function login(userId, password) {
     return postJson({
       action: "login",
@@ -89,58 +85,12 @@
     });
   }
 
-  function adminGetSettings(token) {
-    return postJson({
-      action: "admin.getSettings",
-      token
-    });
-  }
-
-  function adminUpdateSetting(token, key, value) {
-    return postJson({
-      action: "admin.updateSetting",
-      token,
-      key,
-      value
-    });
-  }
-
-  function adminCreateWheel(token, wheelData) {
-    return postJson({
-      action: "admin.createWheel",
-      token,
-      wheel: wheelData
-    });
-  }
-
-  function adminUpdateWheel(token, wheelData) {
-    return postJson({
-      action: "admin.updateWheel",
-      token,
-      wheel: wheelData
-    });
-  }
-
-  function adminDeleteWheel(token, wheelId) {
-    return postJson({
-      action: "admin.deleteWheel",
-      token,
-      wheelId
-    });
-  }
-
   window.SionApi = {
     requestJson,
     getProgram,
     getPublicSettings,
-    getWheels,
     login,
     logout,
-    getCurrentUser,
-    adminGetSettings,
-    adminUpdateSetting,
-    adminCreateWheel,
-    adminUpdateWheel,
-    adminDeleteWheel
+    getCurrentUser
   };
 })();

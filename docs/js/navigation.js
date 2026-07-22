@@ -24,7 +24,6 @@
     const currentPage = document.body.dataset.page;
     const navToggle = document.querySelector("[data-nav-toggle]");
     const navLinks = document.querySelector("[data-nav-links]");
-    const adminLink = document.querySelector("[data-admin-link]");
     const userName = document.querySelector("[data-user-name]");
     const logoutButton = document.querySelector("[data-logout]");
     const user = window.SionAuth ? window.SionAuth.getUser() : null;
@@ -35,10 +34,6 @@
         link.setAttribute("aria-current", "page");
       }
     });
-
-    if (adminLink && (!user || user.role !== "admin")) {
-      adminLink.hidden = true;
-    }
 
     if (userName) {
       userName.textContent = getUserLabel(user);

@@ -7,6 +7,8 @@ Website tinh gon de ho tro chuan bi sinh hoat Sabat. Frontend nam trong `docs/` 
 ```text
 docs/
   index.html
+  login.html
+  home.html
   tab-generator.html
   lucky-wheel.html
   css/
@@ -113,29 +115,25 @@ Khi sua backend:
 
 ## Cac page
 
-- `docs/index.html`: Cong redirect. Chua dang nhap thi ve `login.html`; admin ve `admin/index.html`; user ve `home.html`.
-- `docs/login.html`: Dang nhap bang Apps Script API, luu token trong `sessionStorage`.
+- `docs/index.html`: Cong redirect. Chua dang nhap thi ve `login.html`; da dang nhap thi ve `home.html`.
+- `docs/login.html`: Dang nhap bang Apps Script API. Neu chon "Ghi nho dang nhap" thi token duoc luu trong `localStorage`; neu khong chon thi chi luu trong `sessionStorage`.
 - `docs/home.html`: Home sau dang nhap, doc `publicSettings`.
 - `docs/tab-generator.html`: Tai `action=program`, xem truoc danh sach tab, chon tab va mo tab bang `window.open(url, "_blank", "noopener,noreferrer")`.
 - `docs/lucky-wheel.html`: Trang Boc tham Giao huan. Du lieu 13 Giao huan nam trong `docs/js/mother-teachings.js`, lich su phien nam trong `sessionStorage`.
-- `docs/admin/index.html`: Dashboard admin.
-- `docs/admin/settings.html`: Goi admin settings API va cap nhat tung key.
-- `docs/admin/wheels.html`: Tao, sua va xoa mem wheel qua admin API.
 
 ## Login va route guard
 
-- Token chi luu trong `sessionStorage`, khong luu password.
+- Token chi luu trong `sessionStorage` mac dinh, hoac `localStorage` khi user chon "Ghi nho dang nhap"; khong luu password.
 - Cac page user goi `SionRouteGuard.requireAuth()`.
-- Cac page admin goi `SionRouteGuard.requireAdmin()` va luon xac minh role qua backend `me`.
 - Logout goi API `logout`, xoa session va ve login.
-- Cac admin POST action dang duoc gui theo dang `admin.getSettings`, `admin.updateSetting`, `admin.createWheel`, `admin.updateWheel`, `admin.deleteWheel`.
+- Sau khi dang nhap thanh cong, tat ca user duoc dieu huong ve `home.html`.
 
 ## Test nhanh
 
 1. Mo `docs/index.html` bang Live Server.
 2. Xac nhan page redirect sang `docs/login.html` khi chua co session.
-3. Dang nhap user thuong, kiem tra ve `home.html` va khong thay link admin.
-4. Dang nhap admin, kiem tra ve `admin/index.html` va mo duoc `settings.html`, `wheels.html`.
-5. Mo `tab-generator.html`, kiem tra API `action=program` tai du 3 buoi va khong mo `about:blank`.
-6. Mo `lucky-wheel.html`, bam `Boc tham`, kiem tra modal ket qua va lich su phien theo user.
-7. Dong tab/trinh duyet, session frontend se mat vi dung `sessionStorage`.
+3. Dang nhap khong chon "Ghi nho dang nhap", kiem tra ve `home.html`; dong tab thi session mat.
+4. Dang nhap co chon "Ghi nho dang nhap", reload hoac mo lai website van vao duoc `home.html`.
+5. Bam dang xuat, kiem tra token trong `sessionStorage` va `localStorage` da bi xoa.
+6. Mo `tab-generator.html`, kiem tra API `action=program` tai du 3 buoi va khong mo `about:blank`.
+7. Mo `lucky-wheel.html`, bam `Boc tham`, kiem tra modal ket qua lon va lich su phien theo user.
