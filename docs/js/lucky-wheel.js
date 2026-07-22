@@ -1,6 +1,6 @@
 (function () {
   const STORAGE_KEY = "sion-lang-dh-lucky-wheel-names";
-  const COLORS = ["#6f7f52", "#d6c29a", "#f0dfb6", "#9ea974", "#fff7df", "#c8a96a"];
+  const COLORS = ["#233f98", "#edf2ff", "#d2ad57", "#d8e1f3", "#173173", "#f1f4f9"];
 
   let names = [];
   let currentRotation = 0;
@@ -72,15 +72,15 @@
     context.clearRect(0, 0, size, size);
 
     if (names.length === 0) {
-      context.fillStyle = "#fffdf7";
+      context.fillStyle = "#ffffff";
       context.beginPath();
       context.arc(center, center, radius, 0, Math.PI * 2);
       context.fill();
-      context.strokeStyle = "rgba(47, 51, 40, 0.14)";
+      context.strokeStyle = "rgba(31, 49, 91, 0.18)";
       context.lineWidth = 2;
       context.stroke();
-      context.fillStyle = "#707567";
-      context.font = "bold 30px Trebuchet MS";
+      context.fillStyle = "#667085";
+      context.font = "bold 30px Segoe UI";
       context.textAlign = "center";
       context.textBaseline = "middle";
       context.fillText("Nhập danh sách", center, center);
@@ -99,7 +99,7 @@
       context.closePath();
       context.fillStyle = COLORS[index % COLORS.length];
       context.fill();
-      context.strokeStyle = "rgba(47, 51, 40, 0.16)";
+      context.strokeStyle = "rgba(31, 49, 91, 0.16)";
       context.lineWidth = 2;
       context.stroke();
 
@@ -108,17 +108,17 @@
       context.rotate(startAngle + arc / 2);
       context.textAlign = "right";
       context.textBaseline = "middle";
-      context.fillStyle = index % COLORS.length === 0 || index % COLORS.length === 3 ? "#fffdf7" : "#2f3328";
-      context.font = "bold 24px Trebuchet MS";
+      context.fillStyle = index % COLORS.length === 0 || index % COLORS.length === 4 ? "#ffffff" : "#20283a";
+      context.font = "bold 24px Segoe UI";
       context.fillText(name.slice(0, 18), radius - 20, 0);
       context.restore();
     });
 
     context.beginPath();
     context.arc(center, center, 52, 0, Math.PI * 2);
-    context.fillStyle = "#fffdf7";
+    context.fillStyle = "#ffffff";
     context.fill();
-    context.strokeStyle = "rgba(47, 51, 40, 0.16)";
+    context.strokeStyle = "rgba(31, 49, 91, 0.16)";
     context.lineWidth = 2;
     context.stroke();
   }
@@ -152,6 +152,7 @@
 
   function spinWheel() {
     const { spinButton, removeWinnerButton, winnerText } = getElements();
+    const resultBox = document.getElementById("resultBox");
 
     if (isSpinning) {
       return;
@@ -199,6 +200,10 @@
       spinButton.disabled = false;
       removeWinnerButton.disabled = false;
       winnerText.textContent = names[winnerIndex];
+      if (resultBox) {
+        resultBox.classList.remove("is-highlight");
+        window.requestAnimationFrame(() => resultBox.classList.add("is-highlight"));
+      }
       setStatus(`Kết quả: ${names[winnerIndex]}.`);
     }
 

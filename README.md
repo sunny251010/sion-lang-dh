@@ -22,6 +22,16 @@ Cach nhanh nhat la mo truc tiep `docs/index.html` bang trinh duyet.
 
 Neu muon mo phong gan giong GitHub Pages hon, dung extension Live Server trong VS Code va mo thu muc `docs/`.
 
+## Anh nen Home
+
+Hero trang Home dung anh noi bo tai:
+
+```text
+docs/assets/images/home-hero.jpg
+```
+
+Neu muon doi anh, dat file moi dung ten `home-hero.jpg` vao duong dan tren. CSS da co fallback gradient, nen trang van hien dung khi thieu anh.
+
 ## Cau hinh API
 
 Frontend doc Apps Script API tu:

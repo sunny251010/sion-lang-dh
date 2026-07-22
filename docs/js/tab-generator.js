@@ -67,6 +67,7 @@
 
     if (isValidHttpUrl(config.WORSHIP_HOME_URL)) {
       targets.push({
+        type: "Trang thờ phượng",
         label: "Trang chủ WATV",
         url: config.WORSHIP_HOME_URL
       });
@@ -76,6 +77,7 @@
       const songUrl = createSongUrl(songNumber);
       if (isValidHttpUrl(songUrl)) {
         targets.push({
+          type: "Bài ca",
           label: `Bài ca mới ${songNumber}`,
           url: songUrl
         });
@@ -83,13 +85,14 @@
     });
 
     [
-      { label: "Bài giảng tại worshipvn.net", url: service.sermonSite },
-      { label: "Bài giảng YouTube", url: service.sermonYoutube },
-      { label: "Bài giảng văn bản", url: service.sermonText }
+      { type: "Bài giảng", label: "Bài giảng tại worshipvn.net", url: service.sermonSite },
+      { type: "YouTube", label: "Bài giảng YouTube", url: service.sermonYoutube },
+      { type: "Nội dung bổ sung", label: "Bài giảng văn bản", url: service.sermonText }
     ].forEach((item) => {
       const normalizedUrl = String(item.url || "").trim();
       if (isValidHttpUrl(normalizedUrl)) {
         targets.push({
+          type: item.type,
           label: item.label,
           url: normalizedUrl
         });
@@ -120,6 +123,14 @@
     `;
   }
 
+  function syncSelectedService() {
+    document.querySelectorAll("[data-service]").forEach((button) => {
+      const isActive = button.dataset.service === activeServiceId;
+      button.classList.toggle("is-active", isActive);
+      button.setAttribute("aria-pressed", String(isActive));
+    });
+  }
+
   function renderServices(options = {}) {
     const { show = true } = options;
     const servicesContainer = document.getElementById("services");
@@ -131,27 +142,27 @@
           .join("");
 
         return `
-          <article class="card service-card">
+          <button class="service-option" type="button" data-service="${escapeHtml(service.id)}" aria-pressed="false">
             <div class="service-top">
               <div>
                 <span class="service-tag">${escapeHtml(service.tag)}</span>
                 <h3>${escapeHtml(service.label)}</h3>
               </div>
-              <button class="button secondary" type="button" data-detail="${escapeHtml(service.id)}">Xem trước tab</button>
             </div>
             <p class="muted">${escapeHtml(summarizeService(service))}</p>
             <div class="chip-row">${songChips}</div>
-            <button class="button" type="button" data-service="${escapeHtml(service.id)}">Chọn ${escapeHtml(service.label.toLowerCase())}</button>
-          </article>
+          </button>
         `;
       })
       .join("");
 
     servicesContainer.hidden = !show;
 
-    servicesContainer.querySelectorAll("[data-service], [data-detail]").forEach((button) => {
-      button.addEventListener("click", () => renderDetails(button.dataset.service || button.dataset.detail));
+    servicesContainer.querySelectorAll("[data-service]").forEach((button) => {
+      button.addEventListener("click", () => renderDetails(button.dataset.service));
     });
+
+    syncSelectedService();
   }
 
   function renderDetails(serviceId) {
@@ -163,6 +174,7 @@
     }
 
     activeServiceId = serviceId;
+    syncSelectedService();
 
     const targets = buildTabTargets(service);
     const tabItems = targets
@@ -170,7 +182,10 @@
         <label class="tab-item">
           <input type="checkbox" data-tab-checkbox value="${index}" checked>
           <span>
-            <span class="tab-label">${escapeHtml(target.label)}</span>
+            <span class="tab-label-row">
+              <span class="tab-type">${escapeHtml(target.type)}</span>
+              <span class="tab-label">${escapeHtml(target.label)}</span>
+            </span>
             <span class="tab-url">${escapeHtml(target.url)}</span>
           </span>
         </label>
@@ -266,7 +281,6 @@
     }
 
     if (blockedCount > 0) {
-      alert(`Trình duyệt đã chặn ${blockedCount} tab. Hãy cho phép popup cho website này rồi thử lại.`);
       setStatus(`Đã mở ${openedCount}/${validUrls.length} tab cho ${service.label.toLowerCase()}. Hãy cho phép popup nếu bạn muốn mở đủ tất cả tab.`, "error");
       return;
     }
