@@ -1,9 +1,15 @@
 (function () {
   const config = window.APP_CONFIG;
   const api = window.SionApi;
+  const SERVICE_PRESENTATION = {
+    morning: { label: "Buổi sáng", tag: "Sáng", icon: "S" },
+    afternoon: { label: "Buổi trưa", tag: "Trưa", icon: "T" },
+    evening: { label: "Buổi chiều", tag: "Chiều", icon: "C" }
+  };
 
   let services = cloneServices(config.PROGRAM_FALLBACK);
   let activeServiceId = "";
+  let lastFocusedElement = null;
 
   function cloneServices(list) {
     return JSON.parse(JSON.stringify(list));
@@ -34,6 +40,14 @@
     return `${config.SONG_BASE_URL}${songNumber}/`;
   }
 
+  function getPresentation(service) {
+    return SERVICE_PRESENTATION[service.id] || {
+      label: service.label || "Buổi Sabat",
+      tag: service.tag || "Sabat",
+      icon: String(service.label || "B").charAt(0).toUpperCase()
+    };
+  }
+
   function summarizeService(service) {
     if (service.summary) {
       return service.summary;
@@ -43,12 +57,12 @@
       return `Bài ca mới: ${service.songs.join(" - ")}.`;
     }
 
-    return "Chưa có tóm tắt cho buổi này.";
+    return "Chạm để xem chương trình và danh sách tab cần mở.";
   }
 
   function formatUpdatedAt(value) {
     if (!value) {
-      return "Đang dùng dữ liệu dự phòng trong file.";
+      return "Chưa có thời gian cập nhật.";
     }
 
     const parsed = new Date(value);
@@ -79,39 +93,25 @@
       });
     }
 
-    if (isValidHttpUrl(config.WORSHIP_HOME_URL)) {
-      pushTarget({
-        type: "Trang thờ phượng",
-        label: "Trang chủ WATV",
-        url: config.WORSHIP_HOME_URL
-      });
-    }
+    pushTarget({
+      type: "Trang thờ phượng",
+      label: "Trang chủ WATV",
+      url: config.WORSHIP_HOME_URL
+    });
 
-    service.songs.forEach((songNumber) => {
-      const songUrl = createSongUrl(songNumber);
-      if (isValidHttpUrl(songUrl)) {
-        pushTarget({
-          type: "Bài ca",
-          label: `Bài ca mới ${songNumber}`,
-          url: songUrl
-        });
-      }
+    (service.songs || []).forEach((songNumber) => {
+      pushTarget({
+        type: "Bài ca",
+        label: `Bài ca mới ${songNumber}`,
+        url: createSongUrl(songNumber)
+      });
     });
 
     [
       { type: "Bài giảng", label: "Bài giảng tại worshipvn.net", url: service.sermonSite },
       { type: "YouTube", label: "Bài giảng YouTube", url: service.sermonYoutube },
       { type: "Nội dung bổ sung", label: "Bài giảng văn bản", url: service.sermonText }
-    ].forEach((item) => {
-      const normalizedUrl = String(item.url || "").trim();
-      if (isValidHttpUrl(normalizedUrl)) {
-        pushTarget({
-          type: item.type,
-          label: item.label,
-          url: normalizedUrl
-        });
-      }
-    });
+    ].forEach(pushTarget);
 
     return targets;
   }
@@ -122,74 +122,71 @@
     statusMessage.classList.toggle("is-error", tone === "error");
   }
 
-  function setUpdatedAt(value, sourceLabel) {
+  function setUpdatedAt(value) {
     const updatedAtText = document.getElementById("updatedAtText");
-    const sourceText = sourceLabel ? `Nguồn: ${sourceLabel}. ` : "";
-    updatedAtText.textContent = `${sourceText}Cập nhật: ${formatUpdatedAt(value)}`;
+    updatedAtText.textContent = `Cập nhật: ${formatUpdatedAt(value)}`;
   }
 
-  function renderWelcomePanel() {
-    const detailPanel = document.getElementById("detailPanel");
-    detailPanel.innerHTML = `
-      <p class="eyebrow">Kịch bản</p>
-      <h2>Chọn một buổi để xem trước tab</h2>
-      <p class="lead">Danh sách tab sẽ hiện ở đây với checkbox để bạn chọn trước khi mở.</p>
-    `;
+  function applyBackgroundFromConfig() {
+    if (config.QUICK_PROGRAM_BACKGROUND) {
+      document.body.style.setProperty(
+        "--quick-program-background-image",
+        `url("${config.QUICK_PROGRAM_BACKGROUND}")`
+      );
+    }
   }
 
-  function syncSelectedService() {
-    document.querySelectorAll("[data-service]").forEach((button) => {
-      const isActive = button.dataset.service === activeServiceId;
-      button.classList.toggle("is-active", isActive);
-      button.setAttribute("aria-pressed", String(isActive));
+  function sortServices(list) {
+    return [...list].sort((first, second) => {
+      const firstOrder = config.SERVICE_ORDER[first.id] ?? 99;
+      const secondOrder = config.SERVICE_ORDER[second.id] ?? 99;
+      return firstOrder - secondOrder;
     });
   }
 
-  function renderServices(options = {}) {
-    const { show = true } = options;
+  function renderServices() {
     const servicesContainer = document.getElementById("services");
 
-    servicesContainer.innerHTML = services
+    servicesContainer.innerHTML = sortServices(services)
       .map((service) => {
-        const songChips = service.songs
+        const presentation = getPresentation(service);
+        const songChips = (service.songs || [])
           .map((songNumber) => `<span class="chip">${escapeHtml(songNumber)}</span>`)
           .join("");
 
         return `
-          <button class="service-option" type="button" data-service="${escapeHtml(service.id)}" aria-pressed="false">
+          <button class="service-option" type="button" data-service="${escapeHtml(service.id)}">
             <div class="service-top">
+              <span class="service-icon" aria-hidden="true">${escapeHtml(presentation.icon)}</span>
               <div>
-                <span class="service-tag">${escapeHtml(service.tag)}</span>
-                <h3>${escapeHtml(service.label)}</h3>
+                <span class="service-tag">${escapeHtml(presentation.tag)}</span>
+                <h3>${escapeHtml(presentation.label)}</h3>
               </div>
             </div>
             <p class="muted">${escapeHtml(summarizeService(service))}</p>
-            <div class="chip-row">${songChips}</div>
+            <div class="chip-row" aria-label="Bài ca">${songChips || '<span class="chip">Chưa có bài ca</span>'}</div>
           </button>
         `;
       })
       .join("");
 
-    servicesContainer.hidden = !show;
-
     servicesContainer.querySelectorAll("[data-service]").forEach((button) => {
-      button.addEventListener("click", () => renderDetails(button.dataset.service));
+      button.addEventListener("click", () => openProgramModal(button.dataset.service));
     });
-
-    syncSelectedService();
   }
 
-  function renderDetails(serviceId) {
-    const service = services.find((item) => item.id === serviceId);
-    const detailPanel = document.getElementById("detailPanel");
+  function getModalElements() {
+    return {
+      overlay: document.getElementById("programModalOverlay"),
+      modal: document.getElementById("programModal"),
+      content: document.getElementById("programModalContent"),
+      closeIcon: document.getElementById("programModalCloseIcon")
+    };
+  }
 
-    if (!service) {
-      return;
-    }
-
-    activeServiceId = serviceId;
-    syncSelectedService();
-
+  function renderProgramModal(service) {
+    const { content } = getModalElements();
+    const presentation = getPresentation(service);
     const targets = buildTabTargets(service);
     const tabItems = targets
       .map((target, index) => `
@@ -206,50 +203,84 @@
       `)
       .join("");
 
-    detailPanel.innerHTML = `
-      <p class="eyebrow">${escapeHtml(service.label)} Sabat</p>
-      <h2>${escapeHtml(service.label)}${service.startTime ? ` - ${escapeHtml(service.startTime)}` : ""}</h2>
-      <p class="lead">${escapeHtml(summarizeService(service))}</p>
-      ${service.openingText ? `<div class="announcement">${escapeHtml(service.openingText)}</div>` : ""}
-      ${service.rawContent ? `
-        <div class="resource-group">
-          <strong>Nội dung chương trình</strong>
-          <div class="raw-content">${escapeHtml(service.rawContent)}</div>
+    content.innerHTML = `
+      <div class="program-modal-content">
+        <header class="program-modal-header">
+          <p class="eyebrow">${escapeHtml(presentation.tag)} Sabat</p>
+          <h2 id="programModalTitle">${escapeHtml(presentation.label)}${service.startTime ? ` - ${escapeHtml(service.startTime)}` : ""}</h2>
+          <p class="lead">${escapeHtml(summarizeService(service))}</p>
+        </header>
+        <div class="program-modal-scroll">
+          ${service.openingText ? `<div class="announcement">${escapeHtml(service.openingText)}</div>` : ""}
+          ${service.rawContent ? `
+            <div class="resource-group">
+              <strong>Nội dung chương trình</strong>
+              <div class="raw-content">${escapeHtml(service.rawContent)}</div>
+            </div>
+          ` : ""}
+          <div class="resource-group">
+            <strong>Danh sách tab sắp mở</strong>
+            <span class="muted">Bạn có thể chọn hoặc bỏ chọn từng tab trước khi mở.</span>
+          </div>
+          <div class="tab-list">${tabItems || '<p class="muted">Chưa có URL hợp lệ cho buổi này.</p>'}</div>
+          <div class="popup-help" id="popupHelp">
+            Trình duyệt có thể đang chặn popup. Hãy cho phép mở cửa sổ cho trang này rồi thử lại.
+          </div>
         </div>
-      ` : ""}
-      <div class="resource-group">
-        <strong>Danh sách tab sắp mở</strong>
-        <span class="muted">Thứ tự mở: Trang chủ WATV, bài ca mới, sermon site, YouTube, văn bản.</span>
-      </div>
-      <div class="button-row">
-        <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
-        <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
-        <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
-      </div>
-      <div class="tab-list">${tabItems}</div>
-      <div class="popup-help" id="popupHelp">
-        Trình duyệt có thể đang chặn popup. Hãy bấm vào biểu tượng chặn popup trên thanh địa chỉ và chọn cho phép mở cửa sổ cho trang này, rồi thử lại.
+        <div class="button-row">
+          <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
+          <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
+          <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
+          <button class="button secondary" type="button" id="programModalCloseButton">Đóng</button>
+        </div>
       </div>
     `;
 
     document.getElementById("selectAllTabsButton").addEventListener("click", () => {
-      detailPanel.querySelectorAll("[data-tab-checkbox]").forEach((checkbox) => {
+      content.querySelectorAll("[data-tab-checkbox]").forEach((checkbox) => {
         checkbox.checked = true;
       });
     });
 
     document.getElementById("clearAllTabsButton").addEventListener("click", () => {
-      detailPanel.querySelectorAll("[data-tab-checkbox]").forEach((checkbox) => {
+      content.querySelectorAll("[data-tab-checkbox]").forEach((checkbox) => {
         checkbox.checked = false;
       });
     });
 
     document.getElementById("openSelectedTabsButton").addEventListener("click", openSelectedTabs);
+    document.getElementById("programModalCloseButton").addEventListener("click", closeProgramModal);
+  }
+
+  function openProgramModal(serviceId) {
+    const service = services.find((item) => item.id === serviceId);
+    const { overlay, modal } = getModalElements();
+
+    if (!service) {
+      return;
+    }
+
+    activeServiceId = serviceId;
+    lastFocusedElement = document.activeElement;
+    renderProgramModal(service);
+    overlay.hidden = false;
+    document.body.classList.add("modal-open");
+    modal.focus();
+  }
+
+  function closeProgramModal() {
+    const { overlay } = getModalElements();
+    overlay.hidden = true;
+    document.body.classList.remove("modal-open");
+
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+      lastFocusedElement.focus();
+    }
   }
 
   function openSelectedTabs() {
     const service = services.find((item) => item.id === activeServiceId);
-    const detailPanel = document.getElementById("detailPanel");
+    const { content } = getModalElements();
 
     if (!service) {
       setStatus("Chưa có buổi nào được chọn.", "error");
@@ -257,7 +288,7 @@
     }
 
     const targets = buildTabTargets(service);
-    const selectedIndexes = Array.from(detailPanel.querySelectorAll("[data-tab-checkbox]:checked"))
+    const selectedIndexes = Array.from(content.querySelectorAll("[data-tab-checkbox]:checked"))
       .map((checkbox) => Number(checkbox.value))
       .filter((index) => Number.isInteger(index));
 
@@ -295,55 +326,54 @@
     }
 
     if (blockedCount > 0) {
-      setStatus(`Đã mở ${openedCount}/${validUrls.length} tab cho ${service.label.toLowerCase()}. Hãy cho phép popup nếu bạn muốn mở đủ tất cả tab.`, "error");
+      setStatus(`Đã mở ${openedCount}/${validUrls.length} tab. Hãy cho phép popup nếu bạn muốn mở đủ tất cả tab.`, "error");
       return;
     }
 
-    setStatus(`Đã mở ${openedCount} tab cho ${service.label.toLowerCase()}.`);
+    setStatus(`Đã mở ${openedCount} tab.`);
   }
 
   async function refreshServices() {
-    const servicesContainer = document.getElementById("services");
-    const shouldShowServices = !servicesContainer.hidden;
-
-    setStatus("Đang tải dữ liệu từ Apps Script...");
+    setStatus("Đang cập nhật chương trình...");
 
     try {
       const result = await api.getProgram();
-      services = result.services;
-
-      renderServices({ show: shouldShowServices });
-
-      if (activeServiceId && services.some((item) => item.id === activeServiceId)) {
-        renderDetails(activeServiceId);
-      } else {
-        activeServiceId = "";
-        renderWelcomePanel();
-      }
-
-      setUpdatedAt(result.updatedAt, "Apps Script");
-      setStatus(`Đã tải ${services.length} buổi từ API Apps Script.`);
+      services = Array.isArray(result.services) ? result.services : cloneServices(config.PROGRAM_FALLBACK);
+      renderServices();
+      setUpdatedAt(result.updatedAt);
+      setStatus("Chương trình đã sẵn sàng.");
     } catch (error) {
       services = cloneServices(config.PROGRAM_FALLBACK);
-      renderServices({ show: shouldShowServices });
-
-      if (activeServiceId && services.some((item) => item.id === activeServiceId)) {
-        renderDetails(activeServiceId);
-      } else {
-        activeServiceId = "";
-        renderWelcomePanel();
-      }
-
-      setUpdatedAt("", "Fallback cục bộ");
-      setStatus(`Không tải được API hoặc API trả về lỗi. Trang đang dùng dữ liệu cứng hiện tại. ${error.message}`, "error");
+      renderServices();
+      setUpdatedAt("");
+      setStatus("Chưa cập nhật được chương trình mới. Vui lòng thử lại sau.", "error");
     }
   }
 
+  function bindModalEvents() {
+    const { overlay, closeIcon } = getModalElements();
+
+    closeIcon.addEventListener("click", closeProgramModal);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        closeProgramModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !overlay.hidden) {
+        closeProgramModal();
+      }
+    });
+  }
+
   function initTabGenerator() {
-    const apiUrlDisplay = document.getElementById("apiUrlDisplay");
     const refreshButton = document.getElementById("refreshButton");
-    const revealButton = document.getElementById("revealButton");
-    const servicesContainer = document.getElementById("services");
+
+    applyBackgroundFromConfig();
+    renderServices();
+    bindModalEvents();
+    setUpdatedAt("");
 
     window.SionRouteGuard.requireAuth().then((user) => {
       if (!user) {
@@ -353,17 +383,7 @@
       refreshServices();
     });
 
-    apiUrlDisplay.value = `${config.API_URL}?action=program`;
-    renderServices({ show: true });
-    setUpdatedAt("", "Đang tải");
-
     refreshButton.addEventListener("click", refreshServices);
-
-    revealButton.addEventListener("click", () => {
-      servicesContainer.hidden = !servicesContainer.hidden;
-      revealButton.textContent = servicesContainer.hidden ? "Hiện 3 buổi Sabat" : "Ẩn 3 buổi Sabat";
-      setStatus(servicesContainer.hidden ? "Đã ẩn 3 buổi Sabat." : "Đã hiện 3 buổi Sabat.");
-    });
   }
 
   document.addEventListener("DOMContentLoaded", initTabGenerator);

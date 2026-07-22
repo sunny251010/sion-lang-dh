@@ -9,6 +9,21 @@ window.APP_CONFIG = {
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",
   TEACHING_DRAW_BACKGROUND: "./assets/images/teaching-draw-background.jpg",
+  QUICK_PROGRAM_BACKGROUND: "./assets/images/quick-program-background.jpg",
+  LOCAL_AUTH_USERS: [
+    {
+      id: "admin",
+      password: "2",
+      displayName: "Admin",
+      role: "admin"
+    },
+    {
+      id: "ctcm2026",
+      password: "chuckettrai",
+      displayName: "CTCM 2026",
+      role: "user"
+    }
+  ],
   SERVICE_ORDER: {
     morning: 0,
     afternoon: 1,
@@ -22,7 +37,7 @@ window.APP_CONFIG = {
       sermonSite: "",
       sermonYoutube: "",
       sermonText: "",
-      rawContent: "Không tải được dữ liệu chương trình từ API. Đây là dữ liệu dự phòng cục bộ."
+      rawContent: "Chưa có nội dung chương trình mới cho buổi này."
     },
     {
       id: "afternoon",
@@ -31,7 +46,7 @@ window.APP_CONFIG = {
       sermonSite: "",
       sermonYoutube: "",
       sermonText: "",
-      rawContent: "Không tải được dữ liệu chương trình từ API. Đây là dữ liệu dự phòng cục bộ."
+      rawContent: "Chưa có nội dung chương trình mới cho buổi này."
     },
     {
       id: "evening",
@@ -40,7 +55,7 @@ window.APP_CONFIG = {
       sermonSite: "",
       sermonYoutube: "",
       sermonText: "",
-      rawContent: "Không tải được dữ liệu chương trình từ API. Đây là dữ liệu dự phòng cục bộ."
+      rawContent: "Chưa có nội dung chương trình mới cho buổi này."
     }
   ]
 };

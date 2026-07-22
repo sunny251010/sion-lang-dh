@@ -78,19 +78,11 @@
     });
   }
 
-  function getCurrentUser(token) {
-    return postJson({
-      action: "me",
-      token
-    });
-  }
-
   window.SionApi = {
     requestJson,
     getProgram,
     getPublicSettings,
     login,
-    logout,
-    getCurrentUser
+    logout
   };
 })();

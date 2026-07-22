@@ -47,9 +47,13 @@
   }
 
   function initLogin() {
-    if (window.SionAuth.isLoggedIn()) {
+    if (window.SionAuth.isLoggedIn() && window.SionAuth.isLocalSession()) {
       redirectAfterLogin(window.SionAuth.getUser());
       return;
+    }
+
+    if (window.SionAuth.isLoggedIn() && !window.SionAuth.isLocalSession()) {
+      window.SionAuth.clearSession();
     }
 
     const loginForm = document.getElementById("loginForm");
@@ -76,9 +80,16 @@
       const shouldRemember = Boolean(rememberLogin && rememberLogin.checked);
 
       try {
-        const result = await window.SionApi.login(userId, passwordValue);
+        const result = window.SionAuth.loginLocal(userId, passwordValue);
         window.SionAuth.saveSession(result.token, result.user, result.expiresAt, shouldRemember);
         redirectAfterLogin(result.user);
+
+        /*
+          Google Sheet / Apps Script login cũ được giữ lại để sau này bật lại nếu cần:
+          const result = await window.SionApi.login(userId, passwordValue);
+          window.SionAuth.saveSession(result.token, result.user, result.expiresAt, shouldRemember);
+          redirectAfterLogin(result.user);
+        */
       } catch (error) {
         setLoginError("Không đăng nhập được. Vui lòng kiểm tra ID và mật khẩu.");
       } finally {

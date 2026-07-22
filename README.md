@@ -50,6 +50,14 @@ docs/assets/images/teaching-draw-background.jpg
 
 Neu chua co file nay, trang van hien fallback gradient/overlay.
 
+Anh nen trang Trinh tao nhanh dung duong dan:
+
+```text
+docs/assets/images/quick-program-background.jpg
+```
+
+Trang van co overlay nhe de chu va card de doc tren anh nen.
+
 ## Cau hinh API
 
 Frontend doc Apps Script API tu:
@@ -118,8 +126,8 @@ Khi sua backend:
 - `docs/index.html`: Cong redirect. Chua dang nhap thi ve `login.html`; da dang nhap thi ve `home.html`.
 - `docs/login.html`: Dang nhap bang Apps Script API. Neu chon "Ghi nho dang nhap" thi token duoc luu trong `localStorage`; neu khong chon thi chi luu trong `sessionStorage`.
 - `docs/home.html`: Home sau dang nhap, doc `publicSettings`.
-- `docs/tab-generator.html`: Tai `action=program`, xem truoc danh sach tab, chon tab va mo tab bang `window.open(url, "_blank", "noopener,noreferrer")`.
-- `docs/lucky-wheel.html`: Trang Boc tham Giao huan. Du lieu 13 Giao huan nam trong `docs/js/mother-teachings.js`, lich su phien nam trong `sessionStorage`.
+- `docs/tab-generator.html`: Trinh tao nhanh voi 3 card Sang, Trua, Chieu; chi tiet tung buoi mo trong modal lon, chon tab va mo bang `window.open(url, "_blank", "noopener,noreferrer")`.
+- `docs/lucky-wheel.html`: Trang Boc tham Giao huan. Du lieu 13 Giao huan nam trong `docs/js/mother-teachings.js`, danh sach day du mo bang modal, lich su phien nam trong `sessionStorage`.
 
 ## Login va route guard
 
@@ -135,5 +143,5 @@ Khi sua backend:
 3. Dang nhap khong chon "Ghi nho dang nhap", kiem tra ve `home.html`; dong tab thi session mat.
 4. Dang nhap co chon "Ghi nho dang nhap", reload hoac mo lai website van vao duoc `home.html`.
 5. Bam dang xuat, kiem tra token trong `sessionStorage` va `localStorage` da bi xoa.
-6. Mo `tab-generator.html`, kiem tra API `action=program` tai du 3 buoi va khong mo `about:blank`.
-7. Mo `lucky-wheel.html`, bam `Boc tham`, kiem tra modal ket qua lon va lich su phien theo user.
+6. Mo `tab-generator.html`, kiem tra 3 card hien ngang tren desktop, modal chi tiet mo duoc va khong mo `about:blank`.
+7. Mo `lucky-wheel.html`, bam `Boc tham`, kiem tra modal ket qua lon, modal danh sach Giao huan va lich su phien theo user.

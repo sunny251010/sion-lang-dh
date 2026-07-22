@@ -27,7 +27,13 @@
       modalTeachingNumber: document.getElementById("modalTeachingNumber"),
       modalTeachingContent: document.getElementById("modalTeachingContent"),
       modalCloseIcon: document.getElementById("modalCloseIcon"),
-      modalCloseButton: document.getElementById("modalCloseButton")
+      modalCloseButton: document.getElementById("modalCloseButton"),
+      openTeachingListButton: document.getElementById("openTeachingListButton"),
+      listModalOverlay: document.getElementById("teachingListModalOverlay"),
+      listModal: document.getElementById("teachingListModal"),
+      listContent: document.getElementById("teachingListContent"),
+      listModalCloseIcon: document.getElementById("teachingListModalCloseIcon"),
+      listModalCloseButton: document.getElementById("teachingListModalCloseButton")
     };
   }
 
@@ -238,6 +244,37 @@
     }
   }
 
+  function renderTeachingList() {
+    const { listContent } = getElements();
+    listContent.innerHTML = teachings
+      .map((teaching) => `
+        <article class="teaching-list-item">
+          <h3>Giáo huấn số ${escapeHtml(teaching.number)}</h3>
+          <p>${escapeHtml(teaching.content)}</p>
+        </article>
+      `)
+      .join("");
+  }
+
+  function openTeachingListModal() {
+    const { listModalOverlay, listModal } = getElements();
+    lastFocusedElement = document.activeElement;
+    renderTeachingList();
+    listModalOverlay.hidden = false;
+    document.body.classList.add("modal-open");
+    listModal.focus();
+  }
+
+  function closeTeachingListModal() {
+    const { listModalOverlay } = getElements();
+    listModalOverlay.hidden = true;
+    document.body.classList.remove("modal-open");
+
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+      lastFocusedElement.focus();
+    }
+  }
+
   function finishDraw(teaching, targetRotation) {
     const { latestResultText, resultBox } = getElements();
     currentRotation = targetRotation % (Math.PI * 2);
@@ -316,10 +353,21 @@
   }
 
   function bindModalEvents() {
-    const { modalOverlay, modalCloseIcon, modalCloseButton } = getElements();
+    const {
+      modalOverlay,
+      modalCloseIcon,
+      modalCloseButton,
+      openTeachingListButton,
+      listModalOverlay,
+      listModalCloseIcon,
+      listModalCloseButton
+    } = getElements();
 
     modalCloseIcon.addEventListener("click", closeModal);
     modalCloseButton.addEventListener("click", closeModal);
+    openTeachingListButton.addEventListener("click", openTeachingListModal);
+    listModalCloseIcon.addEventListener("click", closeTeachingListModal);
+    listModalCloseButton.addEventListener("click", closeTeachingListModal);
 
     modalOverlay.addEventListener("click", (event) => {
       if (event.target === modalOverlay) {
@@ -327,9 +375,19 @@
       }
     });
 
+    listModalOverlay.addEventListener("click", (event) => {
+      if (event.target === listModalOverlay) {
+        closeTeachingListModal();
+      }
+    });
+
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !modalOverlay.hidden) {
         closeModal();
+      }
+
+      if (event.key === "Escape" && !listModalOverlay.hidden) {
+        closeTeachingListModal();
       }
     });
   }
@@ -352,15 +410,21 @@
     bindModalEvents();
   }
 
-  function initTeachingDraw() {
-    window.SionRouteGuard.requireAuth().then((user) => {
-      if (!user) {
-        return;
-      }
+  function redirectToLogin() {
+    window.location.replace("./login.html");
+  }
 
-      currentUser = user;
-      initUi();
-    });
+  function initTeachingDraw() {
+    localStorage.removeItem("sion-lang-dh-lucky-wheel-names");
+
+    if (!window.SionAuth.isLoggedIn() || !window.SionAuth.isLocalSession()) {
+      window.SionAuth.clearSession();
+      redirectToLogin();
+      return;
+    }
+
+    currentUser = window.SionAuth.getUser() || {};
+    initUi();
   }
 
   document.addEventListener("DOMContentLoaded", initTeachingDraw);

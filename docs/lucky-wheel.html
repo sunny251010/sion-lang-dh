@@ -25,7 +25,7 @@
       <div class="nav-inner">
         <div class="nav-links" data-nav-links>
           <a class="nav-link" href="./home.html" data-nav-page="home">Trang chủ</a>
-          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo tab</a>
+          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo nhanh</a>
           <a class="nav-link" href="./lucky-wheel.html" data-nav-page="lucky-wheel">Bốc thăm Giáo huấn</a>
         </div>
         <div class="nav-meta">
@@ -53,6 +53,7 @@
           <li>Lịch sử chỉ lưu trong phiên đăng nhập hiện tại của từng user.</li>
           <li>Nếu đóng tab hoặc đăng xuất, lịch sử phiên sẽ được xóa.</li>
         </ul>
+        <button class="button secondary teaching-list-button" type="button" id="openTeachingListButton">Xem danh sách Giáo huấn</button>
         <p class="status" id="drawStatus" aria-live="polite">Sẵn sàng bốc thăm.</p>
       </div>
 
@@ -85,6 +86,16 @@
       <h2 id="modalTitle">Chúc mừng! Bạn đã bốc được Giáo huấn số <span id="modalTeachingNumber"></span></h2>
       <p class="modal-content" id="modalTeachingContent"></p>
       <button class="button" type="button" id="modalCloseButton">Đóng</button>
+    </section>
+  </div>
+
+  <div class="teaching-modal-overlay" id="teachingListModalOverlay" hidden>
+    <section class="teaching-modal teaching-list-modal" id="teachingListModal" role="dialog" aria-modal="true" aria-labelledby="teachingListModalTitle" tabindex="-1">
+      <button class="modal-close" type="button" id="teachingListModalCloseIcon" aria-label="Đóng danh sách">×</button>
+      <p class="eyebrow">13 Giáo huấn</p>
+      <h2 id="teachingListModalTitle">Danh sách Giáo huấn của Mẹ Jerusalem</h2>
+      <div class="teaching-list-content" id="teachingListContent"></div>
+      <button class="button" type="button" id="teachingListModalCloseButton">Đóng</button>
     </section>
   </div>
 

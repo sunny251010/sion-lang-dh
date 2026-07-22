@@ -47,8 +47,45 @@
     clearStorage(persistentStorage);
   }
 
+  function createLocalToken(userId) {
+    const randomPart = window.crypto && window.crypto.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    return `local:${userId}:${randomPart}`;
+  }
+
+  function loginLocal(userId, password) {
+    const normalizedUserId = String(userId || "").trim().toLowerCase();
+    const passwordValue = String(password || "");
+    const users = Array.isArray(config.LOCAL_AUTH_USERS) ? config.LOCAL_AUTH_USERS : [];
+    const matchedUser = users.find((user) => (
+      String(user.id || "").toLowerCase() === normalizedUserId &&
+      String(user.password || "") === passwordValue
+    ));
+
+    if (!matchedUser) {
+      throw new Error("Sai ID hoặc mật khẩu.");
+    }
+
+    const { password: ignoredPassword, ...safeUser } = matchedUser;
+
+    return {
+      token: createLocalToken(safeUser.id),
+      user: {
+        ...safeUser,
+        authProvider: "local"
+      },
+      expiresAt: ""
+    };
+  }
+
   function getToken() {
     return getActiveStorage().getItem(config.SESSION_TOKEN_KEY) || "";
+  }
+
+  function isLocalToken(token) {
+    return String(token || "").startsWith("local:");
   }
 
   function getUser() {
@@ -77,6 +114,7 @@
   function clearSession() {
     clearStorage(sessionStorageRef);
     clearStorage(persistentStorage);
+    persistentStorage.removeItem("sion-lang-dh-lucky-wheel-names");
 
     if (window.SionTeachingHistory) {
       window.SionTeachingHistory.clearAll();
@@ -127,11 +165,21 @@
     return true;
   }
 
+  function isLocalSession() {
+    const user = getUser();
+
+    return Boolean(
+      isLocalToken(getToken()) &&
+      user &&
+      user.authProvider === "local"
+    );
+  }
+
   async function logout() {
     const token = getToken();
 
     try {
-      if (token && window.SionApi) {
+      if (token && window.SionApi && !isLocalToken(token)) {
         await window.SionApi.logout(token);
       }
     } catch (error) {
@@ -145,6 +193,7 @@
   }
 
   window.SionAuth = {
+    loginLocal,
     saveSession,
     getToken,
     getUser,
@@ -153,6 +202,7 @@
     clearSession,
     isExpired,
     isLoggedIn,
+    isLocalSession,
     logout
   };
 })();

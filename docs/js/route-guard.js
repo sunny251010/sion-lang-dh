@@ -7,37 +7,21 @@
     return `${getBasePath()}/login.html`;
   }
 
-  function toHomePath() {
-    return `${getBasePath()}/home.html`;
-  }
-
   function redirect(path) {
     window.location.replace(path);
   }
 
-  function normalizeUserResponse(data) {
-    return data.user || data.currentUser || data;
-  }
-
   async function requireAuth() {
     const token = window.SionAuth.getToken();
+    const user = window.SionAuth.getUser();
 
-    if (!token || !window.SionAuth.isLoggedIn()) {
+    if (!token || !user || !window.SionAuth.isLoggedIn() || !window.SionAuth.isLocalSession()) {
       window.SionAuth.clearSession();
       redirect(toLoginPath());
       return null;
     }
 
-    try {
-      const data = await window.SionApi.getCurrentUser(token);
-      const user = normalizeUserResponse(data);
-      window.SionAuth.saveSession(token, user, data.expiresAt, window.SionAuth.hasPersistentSession());
-      return user;
-    } catch (error) {
-      window.SionAuth.clearSession();
-      redirect(toLoginPath());
-      return null;
-    }
+    return user;
   }
 
   function redirectFromIndex() {

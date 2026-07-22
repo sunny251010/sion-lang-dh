@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trình tạo tab - Sion Lang DH</title>
+  <title>Trình tạo nhanh - Sion Lang DH</title>
   <link rel="stylesheet" href="./css/global.css">
   <link rel="stylesheet" href="./css/tab-generator.css">
 </head>
-<body data-page="tab-generator" data-path-base=".">
+<body data-page="tab-generator" data-path-base="." class="quick-program-page">
   <header class="site-header">
     <div class="header-top">
       <div class="nav-inner">
@@ -25,7 +25,7 @@
       <div class="nav-inner">
         <div class="nav-links" data-nav-links>
           <a class="nav-link" href="./home.html" data-nav-page="home">Trang chủ</a>
-          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo tab</a>
+          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo nhanh</a>
           <a class="nav-link" href="./lucky-wheel.html" data-nav-page="lucky-wheel">Bốc thăm Giáo huấn</a>
         </div>
         <div class="nav-meta">
@@ -39,37 +39,28 @@
   <main class="page">
     <section class="page-banner">
       <p class="eyebrow">Sabat quick launcher</p>
-      <h1>Trình tạo tab</h1>
-      <p class="lead">Tải chương trình từ Apps Script, chọn buổi, xem trước danh sách URL và mở những tab cần dùng.</p>
+      <h1>Trình tạo nhanh</h1>
+      <p class="lead">Chọn buổi thờ phượng, xem trước các tab cần mở và chuẩn bị nhanh cho chương trình.</p>
       <div class="button-row mt-md">
         <button class="button" type="button" id="refreshButton">Làm mới dữ liệu</button>
-        <button class="button secondary" type="button" id="revealButton">Ẩn 3 buổi Sabat</button>
       </div>
       <p class="status" id="statusMessage"></p>
       <p class="updated-at" id="updatedAtText">Đang chờ dữ liệu mới nhất...</p>
     </section>
 
-    <section class="panel source-panel">
-      <div class="field">
-        <label for="apiUrlDisplay">Nguồn dữ liệu Apps Script</label>
-        <input id="apiUrlDisplay" type="url" readonly>
-      </div>
-      <p class="muted">Nếu API lỗi hoặc trả về success=false, trang sẽ tự dùng dữ liệu dự phòng trong frontend.</p>
-    </section>
-
-    <section class="tab-layout">
-      <div class="service-list" id="services"></div>
-
-      <aside class="panel detail-panel" id="detailPanel">
-        <p class="eyebrow">Kịch bản</p>
-        <h2>Chọn một buổi để xem trước tab</h2>
-        <p class="lead">Danh sách tab sẽ hiện ở đây với checkbox để bạn chọn trước khi mở.</p>
-      </aside>
+    <section class="service-list" id="services" aria-label="Chọn buổi thờ phượng">
     </section>
   </main>
 
+  <div class="program-modal-overlay" id="programModalOverlay" hidden>
+    <section class="program-modal" id="programModal" role="dialog" aria-modal="true" aria-labelledby="programModalTitle" tabindex="-1">
+      <button class="modal-close" type="button" id="programModalCloseIcon" aria-label="Đóng chi tiết">×</button>
+      <div id="programModalContent"></div>
+    </section>
+  </div>
+
   <footer class="site-footer">
-    Trình tạo tab dùng API Apps Script và fallback cục bộ khi cần.
+    Trình tạo nhanh giúp chuẩn bị các tab cần dùng cho từng buổi thờ phượng.
   </footer>
 
   <script src="./js/config.js"></script>
