@@ -17,7 +17,7 @@
     try {
       const data = await window.SionApi.getPublicSettings();
       const settings = data.settings || {};
-      applySiteName(settings.siteName || window.APP_CONFIG.DEFAULT_SITE_NAME);
+      applySiteName(window.APP_CONFIG.DEFAULT_SITE_NAME);
 
       if (hero && isSafeRelativeImage(settings.homeHeroImage)) {
         hero.style.backgroundImage = `linear-gradient(rgba(12, 28, 70, 0.54), rgba(12, 28, 70, 0.54)), url("${settings.homeHeroImage}"), linear-gradient(135deg, #1c347d, #4967b7)`;

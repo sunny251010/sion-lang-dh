@@ -257,7 +257,9 @@
 
 .teaching-modal #modalTitle {
   max-width: calc(100% - 74px);
+  color: #2f7d4b;
   font-size: clamp(2rem, 4vw, 3.75rem);
+  font-weight: 900;
   line-height: 1.18;
 }
 

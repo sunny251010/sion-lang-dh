@@ -25,7 +25,7 @@
       const data = await window.SionApi.getPublicSettings();
       const settings = data.settings || {};
 
-      siteName.textContent = settings.siteName || window.APP_CONFIG.DEFAULT_SITE_NAME;
+      siteName.textContent = window.APP_CONFIG.DEFAULT_SITE_NAME;
 
       if (isSafeRelativeImage(settings.loginBackground)) {
         loginPage.style.backgroundImage = `linear-gradient(rgba(12, 28, 70, 0.54), rgba(12, 28, 70, 0.54)), url("${settings.loginBackground}"), linear-gradient(135deg, #1c347d, #4967b7)`;

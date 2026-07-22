@@ -7,7 +7,7 @@ window.APP_CONFIG = {
   SESSION_EXPIRES_KEY: "sionLangDhExpiresAt",
   PROGRAM_CACHE_KEY: "sionLangDhProgramCache",
   PROGRAM_CACHE_TTL_MS: 60 * 60 * 1000,
-  DEFAULT_SITE_NAME: "Sion Lang DH",
+  DEFAULT_SITE_NAME: "Sion Làng Đại Học",
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",
   TEACHING_DRAW_BACKGROUND: "./assets/images/teaching-draw-background.jpg",
