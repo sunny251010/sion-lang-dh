@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập - Sion Lang DH</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/login.css">
+</head>
+<body data-page="login" data-path-base=".">
+  <main class="login-page" id="loginPage">
+    <section class="login-card">
+      <p class="eyebrow">Đăng nhập</p>
+      <h1 id="siteName">Sion Lang DH</h1>
+      <p class="lead">Sử dụng tài khoản được cấp để truy cập công cụ.</p>
+      <div class="maintenance-box" id="maintenanceBox">Hệ thống đang bảo trì. Vui lòng thử lại sau.</div>
+      <form class="login-form" id="loginForm">
+        <div class="field">
+          <label for="userId">ID</label>
+          <input id="userId" name="userId" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Mật khẩu</label>
+          <div class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button class="button secondary" type="button" id="togglePasswordButton">Hiện</button>
+          </div>
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button class="button" type="submit" id="loginButton">Đăng nhập</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/login.js"></script>
+</body>
+</html>

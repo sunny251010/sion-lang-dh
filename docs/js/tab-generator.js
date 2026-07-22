@@ -2,7 +2,7 @@
   const config = window.APP_CONFIG;
   const api = window.SionApi;
 
-  let services = cloneServices(config.DEFAULT_SERVICES);
+  let services = cloneServices(config.PROGRAM_FALLBACK);
   let activeServiceId = "";
 
   function cloneServices(list) {
@@ -64,9 +64,23 @@
 
   function buildTabTargets(service) {
     const targets = [];
+    const seenUrls = new Set();
+
+    function pushTarget(target) {
+      const normalizedUrl = String(target.url || "").trim();
+      if (!isValidHttpUrl(normalizedUrl) || seenUrls.has(normalizedUrl)) {
+        return;
+      }
+
+      seenUrls.add(normalizedUrl);
+      targets.push({
+        ...target,
+        url: normalizedUrl
+      });
+    }
 
     if (isValidHttpUrl(config.WORSHIP_HOME_URL)) {
-      targets.push({
+      pushTarget({
         type: "Trang thờ phượng",
         label: "Trang chủ WATV",
         url: config.WORSHIP_HOME_URL
@@ -76,7 +90,7 @@
     service.songs.forEach((songNumber) => {
       const songUrl = createSongUrl(songNumber);
       if (isValidHttpUrl(songUrl)) {
-        targets.push({
+        pushTarget({
           type: "Bài ca",
           label: `Bài ca mới ${songNumber}`,
           url: songUrl
@@ -91,7 +105,7 @@
     ].forEach((item) => {
       const normalizedUrl = String(item.url || "").trim();
       if (isValidHttpUrl(normalizedUrl)) {
-        targets.push({
+        pushTarget({
           type: item.type,
           label: item.label,
           url: normalizedUrl
@@ -267,7 +281,7 @@
     let blockedCount = 0;
 
     validUrls.forEach((url) => {
-      const openedTab = window.open(url, "_blank");
+      const openedTab = window.open(url, "_blank", "noopener,noreferrer");
       if (!openedTab) {
         blockedCount += 1;
       }
@@ -295,7 +309,7 @@
     setStatus("Đang tải dữ liệu từ Apps Script...");
 
     try {
-      const result = await api.loadServices();
+      const result = await api.getProgram();
       services = result.services;
 
       renderServices({ show: shouldShowServices });
@@ -307,10 +321,10 @@
         renderWelcomePanel();
       }
 
-      setUpdatedAt(result.updatedAt, result.source);
-      setStatus(`Đã tải ${services.length} buổi từ API Apps Script bằng ${result.source}.`);
+      setUpdatedAt(result.updatedAt, "Apps Script");
+      setStatus(`Đã tải ${services.length} buổi từ API Apps Script.`);
     } catch (error) {
-      services = cloneServices(config.DEFAULT_SERVICES);
+      services = cloneServices(config.PROGRAM_FALLBACK);
       renderServices({ show: shouldShowServices });
 
       if (activeServiceId && services.some((item) => item.id === activeServiceId)) {
@@ -331,7 +345,15 @@
     const revealButton = document.getElementById("revealButton");
     const servicesContainer = document.getElementById("services");
 
-    apiUrlDisplay.value = config.API_URL;
+    window.SionRouteGuard.requireAuth().then((user) => {
+      if (!user) {
+        return;
+      }
+
+      refreshServices();
+    });
+
+    apiUrlDisplay.value = `${config.API_URL}?action=program`;
     renderServices({ show: true });
     setUpdatedAt("", "Đang tải");
 
@@ -342,8 +364,6 @@
       revealButton.textContent = servicesContainer.hidden ? "Hiện 3 buổi Sabat" : "Ẩn 3 buổi Sabat";
       setStatus(servicesContainer.hidden ? "Đã ẩn 3 buổi Sabat." : "Đã hiện 3 buổi Sabat.");
     });
-
-    refreshServices();
   }
 
   document.addEventListener("DOMContentLoaded", initTabGenerator);

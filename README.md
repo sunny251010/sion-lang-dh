@@ -32,6 +32,14 @@ docs/assets/images/home-hero.jpg
 
 Neu muon doi anh, dat file moi dung ten `home-hero.jpg` vao duong dan tren. CSS da co fallback gradient, nen trang van hien dung khi thieu anh.
 
+Anh nen Login dung duong dan:
+
+```text
+docs/assets/images/login-background.jpg
+```
+
+Neu chua co file nay, login page se dung fallback gradient.
+
 ## Cau hinh API
 
 Frontend doc Apps Script API tu:
@@ -42,6 +50,12 @@ APP_CONFIG.API_URL
 ```
 
 Khi doi URL `/exec`, sua gia tri `API_URL` trong `docs/js/config.js`.
+
+URL hien tai:
+
+```text
+https://script.google.com/macros/s/AKfycbwDkCyxMJJ0xD_l-9xMSiW_11DT0aL-A36FkcUY_jaSWFzypp6sbpTJ8bpwHkp-mp-tCg/exec
+```
 
 API frontend mong doi du lieu dang:
 
@@ -91,6 +105,29 @@ Khi sua backend:
 
 ## Cac page
 
-- `docs/index.html`: Home va dieu huong chinh.
-- `docs/tab-generator.html`: Tai du lieu Sabat, xem truoc danh sach tab, chon tab va mo tab bang `window.open(url, "_blank")`.
-- `docs/lucky-wheel.html`: Vong quay boc tham bang HTML, CSS, JavaScript thuan, luu danh sach bang `localStorage`.
+- `docs/index.html`: Cong redirect. Chua dang nhap thi ve `login.html`; admin ve `admin/index.html`; user ve `home.html`.
+- `docs/login.html`: Dang nhap bang Apps Script API, luu token trong `sessionStorage`.
+- `docs/home.html`: Home sau dang nhap, doc `publicSettings`.
+- `docs/tab-generator.html`: Tai `action=program`, xem truoc danh sach tab, chon tab va mo tab bang `window.open(url, "_blank", "noopener,noreferrer")`.
+- `docs/lucky-wheel.html`: Tai `action=wheels`; neu API loi thi fallback ve danh sach cuc bo trong `localStorage`.
+- `docs/admin/index.html`: Dashboard admin.
+- `docs/admin/settings.html`: Goi admin settings API va cap nhat tung key.
+- `docs/admin/wheels.html`: Tao, sua va xoa mem wheel qua admin API.
+
+## Login va route guard
+
+- Token chi luu trong `sessionStorage`, khong luu password.
+- Cac page user goi `SionRouteGuard.requireAuth()`.
+- Cac page admin goi `SionRouteGuard.requireAdmin()` va luon xac minh role qua backend `me`.
+- Logout goi API `logout`, xoa session va ve login.
+- Cac admin POST action dang duoc gui theo dang `admin.getSettings`, `admin.updateSetting`, `admin.createWheel`, `admin.updateWheel`, `admin.deleteWheel`.
+
+## Test nhanh
+
+1. Mo `docs/index.html` bang Live Server.
+2. Xac nhan page redirect sang `docs/login.html` khi chua co session.
+3. Dang nhap user thuong, kiem tra ve `home.html` va khong thay link admin.
+4. Dang nhap admin, kiem tra ve `admin/index.html` va mo duoc `settings.html`, `wheels.html`.
+5. Mo `tab-generator.html`, kiem tra API `action=program` tai du 3 buoi va khong mo `about:blank`.
+6. Mo `lucky-wheel.html`, kiem tra `action=wheels` tai duoc dropdown wheel.
+7. Dong tab/trinh duyet, session frontend se mat vi dung `sessionStorage`.

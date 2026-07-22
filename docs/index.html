@@ -5,101 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sion Lang DH</title>
   <link rel="stylesheet" href="./css/global.css">
-  <link rel="stylesheet" href="./css/home.css">
 </head>
-<body data-page="home">
-  <header class="site-header">
-    <div class="header-top">
-      <div class="nav-inner">
-        <a class="brand" href="./index.html">
-          <span class="brand-mark">S</span>
-          <span>Sion Lang DH</span>
-        </a>
-        <span class="header-label">Công cụ hỗ trợ</span>
-        <button class="nav-toggle" type="button" aria-label="Mở menu" aria-expanded="false" data-nav-toggle>
-          <span class="nav-toggle-lines"></span>
-        </button>
-      </div>
-    </div>
-    <nav class="nav-bar" aria-label="Điều hướng chính">
-      <div class="nav-inner">
-        <div class="nav-links" data-nav-links>
-          <a class="nav-link" href="./index.html" data-nav-page="home">Trang chủ</a>
-          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo tab</a>
-          <a class="nav-link" href="./lucky-wheel.html" data-nav-page="lucky-wheel">Vòng quay</a>
-        </div>
-      </div>
-    </nav>
-  </header>
-
-  <main>
-    <section class="home-hero">
-      <div class="home-hero-inner">
-        <div class="home-copy">
-          <p class="eyebrow">Công cụ hỗ trợ Hội Thánh</p>
-          <h1>Sion Lang DH</h1>
-          <p class="lead">
-            Công cụ hỗ trợ lễ thờ phượng, bài ca và các hoạt động trong Hội Thánh.
-          </p>
-          <div class="button-row mt-lg">
-            <a class="button" href="./tab-generator.html">Trình tạo tab</a>
-            <a class="button secondary" href="./lucky-wheel.html">Vòng quay bốc thăm</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="page home-section" aria-label="Các công cụ chính">
-      <div class="section-heading">
-        <p class="eyebrow">Chức năng</p>
-        <h2>Các công cụ chính</h2>
-      </div>
-      <div class="grid grid-3 feature-grid">
-        <a class="card feature-card" href="./tab-generator.html">
-          <div>
-            <span class="feature-icon">T</span>
-            <h3>Trình tạo tab</h3>
-            <p>Mở nhanh các trang bài ca, bài giảng và nội dung cần thiết.</p>
-          </div>
-          <span class="button ghost">Đi tới</span>
-        </a>
-
-        <a class="card feature-card" href="./lucky-wheel.html">
-          <div>
-            <span class="feature-icon">Q</span>
-            <h3>Vòng quay bốc thăm</h3>
-            <p>Chọn ngẫu nhiên người tham gia một cách nhanh chóng.</p>
-          </div>
-          <span class="button ghost">Đi tới</span>
-        </a>
-
-        <article class="card feature-card" aria-disabled="true">
-          <div>
-            <span class="feature-icon">B</span>
-            <h3>Bài ca</h3>
-            <p>Khu vực dành cho thư viện bài ca.</p>
-          </div>
-          <span class="feature-status">Sắp có</span>
-        </article>
-      </div>
-    </section>
-
-    <section class="page home-section">
-      <div class="panel purpose-panel">
-        <p class="eyebrow">Mục đích</p>
-        <h2>Đơn giản hơn cho mỗi buổi nhóm</h2>
-        <p class="lead">
-          Website gom những thao tác lặp lại vào một nơi rõ ràng: chuẩn bị tab cần mở, hỗ trợ chọn người tham gia và để dành không gian mở rộng cho bài ca, tài liệu trong tương lai.
-        </p>
-      </div>
+<body data-page="index" data-path-base=".">
+  <main class="page">
+    <section class="panel">
+      <p class="eyebrow">Đang điều hướng</p>
+      <h1>Sion Lang DH</h1>
+      <p class="lead">Vui lòng chờ trong giây lát...</p>
     </section>
   </main>
 
-  <footer class="site-footer">
-    Sion Lang DH - frontend chạy bằng GitHub Pages, backend chạy riêng trên Google Apps Script.
-  </footer>
-
-  <script src="./js/navigation.js"></script>
-  <script src="./js/home.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/route-guard.js"></script>
 </body>
 </html>

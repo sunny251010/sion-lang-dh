@@ -3,6 +3,7 @@
   const COLORS = ["#233f98", "#edf2ff", "#d2ad57", "#d8e1f3", "#173173", "#f1f4f9"];
 
   let names = [];
+  let wheels = [];
   let currentRotation = 0;
   let isSpinning = false;
   let winnerIndex = -1;
@@ -10,6 +11,7 @@
   function getElements() {
     return {
       nameInput: document.getElementById("nameInput"),
+      wheelSelect: document.getElementById("wheelSelect"),
       updateListButton: document.getElementById("updateListButton"),
       resetButton: document.getElementById("resetButton"),
       spinButton: document.getElementById("spinButton"),
@@ -60,6 +62,76 @@
   function updateCountText() {
     const { nameCountText } = getElements();
     nameCountText.textContent = `${names.length} người trong danh sách.`;
+  }
+
+  function setSpinEnabled(isEnabled) {
+    const { spinButton } = getElements();
+    spinButton.disabled = !isEnabled;
+  }
+
+  function populateWheelSelect() {
+    const { wheelSelect } = getElements();
+
+    wheelSelect.innerHTML = wheels
+      .map((wheel, index) => `<option value="${index}">${wheel.title || `Vòng quay ${index + 1}`}</option>`)
+      .join("");
+
+    wheelSelect.disabled = wheels.length <= 1;
+  }
+
+  function applyWheel(index) {
+    const wheel = wheels[index];
+    winnerIndex = -1;
+    currentRotation = 0;
+
+    if (!wheel) {
+      names = [];
+      syncListToUi();
+      setSpinEnabled(false);
+      setStatus("Chưa có vòng quay nào từ API.", "error");
+      return;
+    }
+
+    names = Array.isArray(wheel.participants)
+      ? wheel.participants.map((name) => String(name).trim()).filter(Boolean)
+      : [];
+
+    syncListToUi();
+    setSpinEnabled(names.length > 0);
+    setStatus(names.length > 0 ? `Đã tải ${wheel.title || "vòng quay"}.` : "Vòng quay này chưa có người tham gia.", names.length > 0 ? "info" : "error");
+  }
+
+  async function loadWheelsFromApi() {
+    const { wheelSelect } = getElements();
+
+    try {
+      const data = await window.SionApi.getWheels();
+      wheels = Array.isArray(data.wheels) ? data.wheels : [];
+      populateWheelSelect();
+
+      if (wheels.length === 0) {
+        applyWheel(-1);
+        return;
+      }
+
+      wheelSelect.value = "0";
+      applyWheel(0);
+    } catch (error) {
+      const localNames = loadNames();
+      wheels = localNames.length > 0
+        ? [{ wheelId: "local-fallback", title: "Dữ liệu cục bộ", participants: localNames }]
+        : [];
+      populateWheelSelect();
+
+      if (wheels.length === 0) {
+        applyWheel(-1);
+        setStatus("Không tải được danh sách vòng quay và chưa có dữ liệu cục bộ.", "error");
+        return;
+      }
+
+      applyWheel(0);
+      setStatus("Không tải được API vòng quay. Đang dùng dữ liệu cục bộ trong trình duyệt.", "error");
+    }
   }
 
   function drawWheel() {
@@ -144,9 +216,11 @@
 
     if (names.length === 0) {
       setStatus("Danh sách đang trống. Hãy nhập ít nhất một tên hợp lệ.", "error");
+      setSpinEnabled(false);
       return;
     }
 
+    setSpinEnabled(true);
     setStatus("Đã cập nhật danh sách.");
   }
 
@@ -237,21 +311,32 @@
     winnerText.textContent = "Chưa quay";
     updateCountText();
     drawWheel();
+    setSpinEnabled(false);
     setStatus("Đã đặt lại vòng quay.");
   }
 
   function initLuckyWheel() {
-    const { updateListButton, resetButton, spinButton, removeWinnerButton, nameInput } = getElements();
+    const { updateListButton, resetButton, spinButton, removeWinnerButton, nameInput, wheelSelect } = getElements();
 
-    names = loadNames();
-    nameInput.value = names.join("\n");
+    window.SionRouteGuard.requireAuth().then((user) => {
+      if (!user) {
+        return;
+      }
+
+      loadWheelsFromApi();
+    });
+
+    names = [];
+    nameInput.value = "";
     updateCountText();
     drawWheel();
+    setSpinEnabled(false);
 
     updateListButton.addEventListener("click", updateNamesFromInput);
     resetButton.addEventListener("click", resetWheel);
     spinButton.addEventListener("click", spinWheel);
     removeWinnerButton.addEventListener("click", removeWinner);
+    wheelSelect.addEventListener("change", () => applyWheel(Number(wheelSelect.value)));
   }
 
   document.addEventListener("DOMContentLoaded", initLuckyWheel);

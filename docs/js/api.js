@@ -1,157 +1,146 @@
 (function () {
   const config = window.APP_CONFIG;
+  const TIMEOUT_MS = 15000;
 
-  function buildJsonpUrl(url, callbackName, parameterName) {
-    const parsedUrl = new URL(url);
-    parsedUrl.searchParams.set(parameterName, callbackName);
-    parsedUrl.searchParams.set("t", Date.now());
-    return parsedUrl.toString();
+  function buildUrl(action) {
+    const url = new URL(config.API_URL);
+    url.searchParams.set("action", action);
+    url.searchParams.set("t", Date.now());
+    return url.toString();
   }
 
-  function loadJsonp(url, parameterName) {
-    return new Promise((resolve, reject) => {
-      const callbackName = `__sionLangCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-      const script = document.createElement("script");
-      const timeoutId = window.setTimeout(() => {
-        cleanup();
-        reject(new Error(`JSONP (${parameterName}) không phản hồi kịp thời.`));
-      }, 15000);
+  async function requestJson(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-      function cleanup() {
-        window.clearTimeout(timeoutId);
-        if (script.parentNode) {
-          script.parentNode.removeChild(script);
-        }
-        delete window[callbackName];
-      }
-
-      window[callbackName] = (payload) => {
-        cleanup();
-        resolve(payload);
-      };
-
-      script.onerror = () => {
-        cleanup();
-        reject(new Error(`Không tải được JSONP với tham số ${parameterName}.`));
-      };
-
-      script.src = buildJsonpUrl(url, callbackName, parameterName);
-      document.body.appendChild(script);
-    });
-  }
-
-  function normalizeSongList(value) {
-    const items = Array.isArray(value)
-      ? value
-      : String(value || "")
-          .split(/[|,\s]+/)
-          .map((item) => item.trim())
-          .filter(Boolean);
-
-    return items
-      .map((item) => String(item).trim())
-      .filter(Boolean);
-  }
-
-  function sortServices(list) {
-    return list.slice().sort((left, right) => {
-      const leftRank = config.SERVICE_ORDER[left.id] ?? 99;
-      const rightRank = config.SERVICE_ORDER[right.id] ?? 99;
-
-      if (leftRank !== rightRank) {
-        return leftRank - rightRank;
-      }
-
-      return String(left.label).localeCompare(String(right.label), "vi");
-    });
-  }
-
-  function normalizeService(rawService, index) {
-    const service = rawService && typeof rawService === "object" ? rawService : {};
-    const fallback = config.DEFAULT_SERVICES.find((item) => item.id === service.id) || config.DEFAULT_SERVICES[index] || {};
-    const rawSongs = service.songs && service.songs.length ? service.songs : fallback.songs;
-
-    return {
-      id: String(service.id || fallback.id || `service-${index + 1}`),
-      label: String(service.label || fallback.label || `Buổi ${index + 1}`),
-      startTime: String(service.startTime || fallback.startTime || ""),
-      tag: String(service.tag || fallback.tag || "Buổi Sabat"),
-      openingText: String(service.openingText || fallback.openingText || ""),
-      songs: normalizeSongList(rawSongs),
-      summary: String(service.summary || fallback.summary || ""),
-      sermonSite: String(service.sermonSite || fallback.sermonSite || ""),
-      sermonYoutube: String(service.sermonYoutube || fallback.sermonYoutube || ""),
-      sermonText: String(service.sermonText || fallback.sermonText || ""),
-      rawContent: String(service.rawContent || fallback.rawContent || "")
-    };
-  }
-
-  function normalizePayload(payload) {
-    if (!payload || payload.success !== true) {
-      throw new Error("API trả về success=false hoặc dữ liệu không hợp lệ.");
-    }
-
-    if (!Array.isArray(payload.services)) {
-      throw new Error("API không có mảng services hợp lệ.");
-    }
-
-    const services = sortServices(payload.services.map((service, index) => normalizeService(service, index)));
-
-    if (services.length === 0) {
-      throw new Error("API không có buổi nào để hiển thị.");
-    }
-
-    return {
-      updatedAt: String(payload.updatedAt || ""),
-      services
-    };
-  }
-
-  async function fetchRawPayload() {
     try {
-      const response = await fetch(config.API_URL, {
-        method: "GET",
-        cache: "no-store"
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
-      return {
-        payload: await response.json(),
-        source: "fetch()"
-      };
-    } catch (fetchError) {
-      const errors = [];
-
-      for (const parameterName of ["callback", "prefix"]) {
-        try {
-          return {
-            payload: await loadJsonp(config.API_URL, parameterName),
-            source: `JSONP (${parameterName})`
-          };
-        } catch (jsonpError) {
-          errors.push(jsonpError.message);
-        }
+      let data;
+      try {
+        data = await response.json();
+      } catch (error) {
+        throw new Error("API không trả về JSON hợp lệ.");
       }
 
-      throw new Error(`${fetchError.message}. ${errors.join(" | ")}`);
+      if (!data || data.success === false) {
+        throw new Error(data && (data.error || data.message) ? data.error || data.message : "API trả về lỗi.");
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("API phản hồi quá lâu. Vui lòng thử lại.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
-  async function loadServices() {
-    const result = await fetchRawPayload();
-    const normalized = normalizePayload(result.payload);
+  function postJson(payload) {
+    return requestJson(config.API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    });
+  }
 
-    return {
-      services: normalized.services,
-      updatedAt: normalized.updatedAt,
-      source: result.source
-    };
+  function getProgram() {
+    return requestJson(buildUrl("program"));
+  }
+
+  function getPublicSettings() {
+    return requestJson(buildUrl("publicSettings"));
+  }
+
+  function getWheels() {
+    return requestJson(buildUrl("wheels"));
+  }
+
+  function login(userId, password) {
+    return postJson({
+      action: "login",
+      userId,
+      password
+    });
+  }
+
+  function logout(token) {
+    return postJson({
+      action: "logout",
+      token
+    });
+  }
+
+  function getCurrentUser(token) {
+    return postJson({
+      action: "me",
+      token
+    });
+  }
+
+  function adminGetSettings(token) {
+    return postJson({
+      action: "admin.getSettings",
+      token
+    });
+  }
+
+  function adminUpdateSetting(token, key, value) {
+    return postJson({
+      action: "admin.updateSetting",
+      token,
+      key,
+      value
+    });
+  }
+
+  function adminCreateWheel(token, wheelData) {
+    return postJson({
+      action: "admin.createWheel",
+      token,
+      wheel: wheelData
+    });
+  }
+
+  function adminUpdateWheel(token, wheelData) {
+    return postJson({
+      action: "admin.updateWheel",
+      token,
+      wheel: wheelData
+    });
+  }
+
+  function adminDeleteWheel(token, wheelId) {
+    return postJson({
+      action: "admin.deleteWheel",
+      token,
+      wheelId
+    });
   }
 
   window.SionApi = {
-    loadServices
+    requestJson,
+    getProgram,
+    getPublicSettings,
+    getWheels,
+    login,
+    logout,
+    getCurrentUser,
+    adminGetSettings,
+    adminUpdateSetting,
+    adminCreateWheel,
+    adminUpdateWheel,
+    adminDeleteWheel
   };
 })();
