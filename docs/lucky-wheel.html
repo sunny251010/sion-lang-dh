@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vòng quay bốc thăm - Sion Lang DH</title>
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/lucky-wheel.css">
+</head>
+<body data-page="lucky-wheel">
+  <header class="site-header">
+    <nav class="nav" aria-label="Điều hướng chính">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark">S</span>
+        <span>Sion Lang DH</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="Mở menu" aria-expanded="false" data-nav-toggle>
+        <span class="nav-toggle-lines"></span>
+      </button>
+      <div class="nav-links" data-nav-links>
+        <a class="nav-link" href="./index.html" data-nav-page="home">Home</a>
+        <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo tab</a>
+        <a class="nav-link" href="./lucky-wheel.html" data-nav-page="lucky-wheel">Vòng quay bốc thăm</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="page-header">
+      <p class="eyebrow">Bốc thăm ngẫu nhiên</p>
+      <h1>Vòng quay bốc thăm</h1>
+      <p class="lead">Nhập mỗi người một dòng, cập nhật danh sách rồi quay để chọn một người thắng.</p>
+    </section>
+
+    <section class="wheel-layout">
+      <div class="panel stack">
+        <div class="field">
+          <label for="nameInput">Danh sách người tham gia</label>
+          <textarea id="nameInput" placeholder="An&#10;Bình&#10;Chi"></textarea>
+        </div>
+        <div class="button-row">
+          <button class="button" type="button" id="updateListButton">Cập nhật danh sách</button>
+          <button class="button secondary" type="button" id="resetButton">Đặt lại</button>
+        </div>
+        <p class="name-count" id="nameCountText">0 người trong danh sách.</p>
+        <p class="status" id="wheelStatus"></p>
+      </div>
+
+      <div class="panel wheel-stage">
+        <div class="wheel-wrap">
+          <div class="wheel-pointer" aria-hidden="true"></div>
+          <canvas id="wheelCanvas" width="720" height="720" aria-label="Vòng quay bốc thăm"></canvas>
+        </div>
+        <div class="button-row">
+          <button class="button" type="button" id="spinButton">Quay</button>
+          <button class="button secondary" type="button" id="removeWinnerButton" disabled>Xóa người đã trúng</button>
+        </div>
+        <div class="result-box" aria-live="polite">
+          <span class="result-label">Kết quả</span>
+          <span class="result-name" id="winnerText">Chưa quay</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    Danh sách được lưu tạm trong trình duyệt bằng localStorage.
+  </footer>
+
+  <script src="./js/navigation.js"></script>
+  <script src="./js/lucky-wheel.js"></script>
+</body>
+</html>

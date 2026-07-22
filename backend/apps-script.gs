@@ -1,23 +1,44 @@
 const SHEET_NAME = "Services";
 
 function doGet(request) {
-  const payload = {
-    updatedAt: new Date().toISOString(),
-    services: readServices_()
-  };
-
-  const prefix = request && request.parameters ? request.parameters.prefix : "";
-  const output = prefix
-    ? `${prefix}(${JSON.stringify(payload)})`
+  const callbackName = getCallbackName_(request);
+  const payload = buildPayload_();
+  const output = callbackName
+    ? `${callbackName}(${JSON.stringify(payload)})`
     : JSON.stringify(payload);
 
   return ContentService
     .createTextOutput(output)
     .setMimeType(
-      prefix
+      callbackName
         ? ContentService.MimeType.JAVASCRIPT
         : ContentService.MimeType.JSON
     );
+}
+
+function buildPayload_() {
+  try {
+    return {
+      success: true,
+      updatedAt: new Date().toISOString(),
+      services: readServices_()
+    };
+  } catch (error) {
+    return {
+      success: false,
+      updatedAt: new Date().toISOString(),
+      message: error.message,
+      services: []
+    };
+  }
+}
+
+function getCallbackName_(request) {
+  if (!request || !request.parameters) {
+    return "";
+  }
+
+  return request.parameters.callback || request.parameters.prefix || "";
 }
 
 function readServices_() {
@@ -50,28 +71,16 @@ function mapRowToService_(headers, row, index) {
   return {
     id: record.id || `service-${index + 1}`,
     label: record.label || `Buoi ${index + 1}`,
+    songs: parseTextList_(record.songs),
+    sermonSite: record.sermonSite || record.sermonUrl || record.sermon || "",
+    sermonYoutube: record.sermonYoutube || record.youtube || "",
+    sermonText: record.sermonText || record.text || "",
+    rawContent: record.rawContent || record.content || "",
     startTime: record.startTime || "",
     tag: record.tag || "",
     openingText: record.openingText || "",
-    songs: parseNumberList_(record.songs),
-    summary: record.summary || "",
-    sermon: {
-      title: record.sermonTitle || "",
-      site: record.sermonSite || "",
-      youtube: record.sermonYoutube || "",
-      text: record.sermonText || ""
-    },
-    agenda: parseTextList_(record.agenda)
+    summary: record.summary || ""
   };
-}
-
-function parseNumberList_(value) {
-  return String(value || "")
-    .split("|")
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item) => Number(item))
-    .filter((item) => Number.isFinite(item));
 }
 
 function parseTextList_(value) {
