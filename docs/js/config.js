@@ -5,6 +5,8 @@ window.APP_CONFIG = {
   SESSION_TOKEN_KEY: "sionLangDhToken",
   SESSION_USER_KEY: "sionLangDhUser",
   SESSION_EXPIRES_KEY: "sionLangDhExpiresAt",
+  PROGRAM_CACHE_KEY: "sionLangDhProgramCache",
+  PROGRAM_CACHE_TTL_MS: 60 * 60 * 1000,
   DEFAULT_SITE_NAME: "Sion Lang DH",
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",

@@ -10,6 +10,7 @@
   let services = cloneServices(config.PROGRAM_FALLBACK);
   let activeServiceId = "";
   let lastFocusedElement = null;
+  let isRefreshing = false;
 
   function cloneServices(list) {
     return JSON.parse(JSON.stringify(list));
@@ -74,6 +75,51 @@
       dateStyle: "full",
       timeStyle: "medium"
     }).format(parsed);
+  }
+
+  function getProgramCacheTtl() {
+    return Number(config.PROGRAM_CACHE_TTL_MS) || 60 * 60 * 1000;
+  }
+
+  function loadProgramCache() {
+    try {
+      const rawCache = localStorage.getItem(config.PROGRAM_CACHE_KEY);
+
+      if (!rawCache) {
+        return null;
+      }
+
+      const cache = JSON.parse(rawCache);
+      const isFresh = cache &&
+        Array.isArray(cache.services) &&
+        Number.isFinite(cache.cachedAt) &&
+        Date.now() - cache.cachedAt < getProgramCacheTtl();
+
+      if (!isFresh) {
+        localStorage.removeItem(config.PROGRAM_CACHE_KEY);
+        return null;
+      }
+
+      return cache;
+    } catch (error) {
+      localStorage.removeItem(config.PROGRAM_CACHE_KEY);
+      return null;
+    }
+  }
+
+  function saveProgramCache(data) {
+    try {
+      localStorage.setItem(
+        config.PROGRAM_CACHE_KEY,
+        JSON.stringify({
+          services: data.services,
+          updatedAt: data.updatedAt || "",
+          cachedAt: Date.now()
+        })
+      );
+    } catch (error) {
+      return;
+    }
   }
 
   function buildTabTargets(service) {
@@ -155,7 +201,7 @@
           .join("");
 
         return `
-          <button class="service-option" type="button" data-service="${escapeHtml(service.id)}">
+          <button class="service-option" type="button" data-service="${escapeHtml(service.id)}" ${isRefreshing ? "disabled" : ""}>
             <div class="service-top">
               <span class="service-icon" aria-hidden="true">${escapeHtml(presentation.icon)}</span>
               <div>
@@ -170,9 +216,24 @@
       })
       .join("");
 
+    servicesContainer.classList.toggle("is-loading", isRefreshing);
+    servicesContainer.setAttribute("aria-busy", String(isRefreshing));
+
     servicesContainer.querySelectorAll("[data-service]").forEach((button) => {
       button.addEventListener("click", () => openProgramModal(button.dataset.service));
     });
+  }
+
+  function setRefreshing(isLoading) {
+    const refreshButton = document.getElementById("refreshButton");
+    isRefreshing = isLoading;
+
+    if (refreshButton) {
+      refreshButton.disabled = isLoading;
+      refreshButton.textContent = isLoading ? "Đang lấy dữ liệu..." : "Làm mới dữ liệu";
+    }
+
+    renderServices();
   }
 
   function getModalElements() {
@@ -333,20 +394,44 @@
     setStatus(`Đã mở ${openedCount} tab.`);
   }
 
-  async function refreshServices() {
-    setStatus("Đang cập nhật chương trình...");
+  function applyProgramData(data) {
+    services = Array.isArray(data.services) ? data.services : cloneServices(config.PROGRAM_FALLBACK);
+    setUpdatedAt(data.updatedAt || "");
+  }
+
+  async function refreshServices(options = {}) {
+    const { force = false } = options;
+
+    if (isRefreshing) {
+      return;
+    }
+
+    const cachedData = force ? null : loadProgramCache();
+
+    if (cachedData) {
+      applyProgramData(cachedData);
+      renderServices();
+      setStatus("Đang dùng dữ liệu đã lưu trong 1 giờ. Bấm Làm mới dữ liệu nếu muốn cập nhật ngay.");
+      return;
+    }
+
+    setRefreshing(true);
+    setStatus("Đang lấy dữ liệu...");
 
     try {
       const result = await api.getProgram();
-      services = Array.isArray(result.services) ? result.services : cloneServices(config.PROGRAM_FALLBACK);
-      renderServices();
-      setUpdatedAt(result.updatedAt);
+      applyProgramData(result);
+      saveProgramCache({
+        services,
+        updatedAt: result.updatedAt || ""
+      });
       setStatus("Chương trình đã sẵn sàng.");
     } catch (error) {
       services = cloneServices(config.PROGRAM_FALLBACK);
-      renderServices();
       setUpdatedAt("");
       setStatus("Chưa cập nhật được chương trình mới. Vui lòng thử lại sau.", "error");
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -383,7 +468,7 @@
       refreshServices();
     });
 
-    refreshButton.addEventListener("click", refreshServices);
+    refreshButton.addEventListener("click", () => refreshServices({ force: true }));
   }
 
   document.addEventListener("DOMContentLoaded", initTabGenerator);
