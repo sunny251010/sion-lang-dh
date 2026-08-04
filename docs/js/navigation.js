@@ -7,6 +7,10 @@
     return `${getBasePath()}/login.html`;
   }
 
+  function getHomePath() {
+    return `${getBasePath()}/home.html`;
+  }
+
   function getUserLabel(user) {
     if (!user) {
       return "";
@@ -17,7 +21,9 @@
 
   async function handleLogout() {
     await window.SionAuth.logout();
-    window.location.href = getLoginPath();
+    window.location.href = window.SionAuth.isAuthDisabled()
+      ? getHomePath()
+      : getLoginPath();
   }
 
   function initNavigation() {
@@ -40,6 +46,7 @@
     }
 
     if (logoutButton) {
+      logoutButton.hidden = window.SionAuth && window.SionAuth.isAuthDisabled();
       logoutButton.addEventListener("click", handleLogout);
     }
 

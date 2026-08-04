@@ -7,6 +7,13 @@ window.APP_CONFIG = {
   SESSION_EXPIRES_KEY: "sionLangDhExpiresAt",
   PROGRAM_CACHE_KEY: "sionLangDhProgramCache",
   PROGRAM_CACHE_TTL_MS: 60 * 60 * 1000,
+  AUTH_DISABLED: true,
+  DEFAULT_AUTH_USER: {
+    id: "guest",
+    displayName: "Guest",
+    role: "guest",
+    authProvider: "disabled"
+  },
   DEFAULT_SITE_NAME: "Sion Làng Đại Học",
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",

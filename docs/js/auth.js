@@ -30,6 +30,20 @@
     return Boolean(persistentStorage.getItem(config.SESSION_TOKEN_KEY));
   }
 
+  function isAuthDisabled() {
+    return config.AUTH_DISABLED === true;
+  }
+
+  function getDefaultUser() {
+    return {
+      id: "guest",
+      displayName: "Guest",
+      role: "guest",
+      authProvider: "disabled",
+      ...(config.DEFAULT_AUTH_USER || {})
+    };
+  }
+
   function getActiveStorage() {
     return sessionStorageRef.getItem(config.SESSION_TOKEN_KEY)
       ? sessionStorageRef
@@ -81,6 +95,10 @@
   }
 
   function getToken() {
+    if (isAuthDisabled()) {
+      return "auth-disabled";
+    }
+
     return getActiveStorage().getItem(config.SESSION_TOKEN_KEY) || "";
   }
 
@@ -89,6 +107,10 @@
   }
 
   function getUser() {
+    if (isAuthDisabled()) {
+      return getDefaultUser();
+    }
+
     const rawUser = getActiveStorage().getItem(
       config.SESSION_USER_KEY
     );
@@ -106,6 +128,10 @@
   }
 
   function getExpiresAt() {
+    if (isAuthDisabled()) {
+      return "";
+    }
+
     return (
       getActiveStorage().getItem(config.SESSION_EXPIRES_KEY) || ""
     );
@@ -151,6 +177,10 @@
   }
 
   function isLoggedIn() {
+    if (isAuthDisabled()) {
+      return true;
+    }
+
     const token = getToken();
 
     if (!token) {
@@ -166,6 +196,10 @@
   }
 
   function isLocalSession() {
+    if (isAuthDisabled()) {
+      return true;
+    }
+
     const user = getUser();
 
     return Boolean(
@@ -176,6 +210,11 @@
   }
 
   async function logout() {
+    if (isAuthDisabled()) {
+      clearSession();
+      return;
+    }
+
     const token = getToken();
 
     try {
@@ -199,6 +238,7 @@
     getUser,
     getExpiresAt,
     hasPersistentSession,
+    isAuthDisabled,
     clearSession,
     isExpired,
     isLoggedIn,
