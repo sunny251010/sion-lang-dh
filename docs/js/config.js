@@ -1,5 +1,5 @@
 window.APP_CONFIG = {
-  API_URL: "https://script.google.com/macros/s/AKfycbwDkCyxMJJ0xD_l-9xMSiW_11DT0aL-A36FkcUY_jaSWFzypp6sbpTJ8bpwHkp-mp-tCg/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbyaXcbRdL-s23b9KLg9VZTTlad0j3dwqeXKmqvDLcyotzERC2bKSOpMaHnPlts_Nzom/exec",
   WORSHIP_HOME_URL: "https://worship.watv.org/vi/home",
   SONG_BASE_URL: "https://bookvn.net/newsong/newsong",
   SESSION_TOKEN_KEY: "sionLangDhToken",
