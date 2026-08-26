@@ -3,8 +3,8 @@
   const api = window.SionApi;
   const SERVICE_PRESENTATION = {
     morning: { label: "Buổi sáng", tag: "Sáng", icon: "S" },
-    afternoon: { label: "Buổi trưa", tag: "Trưa", icon: "T" },
-    evening: { label: "Buổi chiều", tag: "Chiều", icon: "C" }
+    afternoon: { label: "Buổi chiều", tag: "Chiều", icon: "C" },
+    evening: { label: "Buổi tối", tag: "Tối", icon: "T" }
   };
 
   let services = cloneServices(config.PROGRAM_FALLBACK);
