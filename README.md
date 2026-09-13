@@ -11,6 +11,7 @@ docs/
   home.html
   tab-generator.html
   lucky-wheel.html
+  prayer.html
   css/
   js/
   assets/
@@ -128,6 +129,19 @@ Khi sua backend:
 - `docs/home.html`: Home sau dang nhap, doc `publicSettings`.
 - `docs/tab-generator.html`: Trinh tao nhanh voi 3 card Sang, Trua, Chieu; chi tiet tung buoi mo trong modal lon, chon tab va mo bang `window.open(url, "_blank", "noopener,noreferrer")`.
 - `docs/lucky-wheel.html`: Trang Boc tham Giao huan. Du lieu 13 Giao huan nam trong `docs/js/mother-teachings.js`, danh sach day du mo bang modal, lich su phien nam trong `sessionStorage`.
+- `docs/prayer.html`: Trang Cau nguyen gom 3 phan, ho tro phat ngau nhien hoac chon tung bai va hien loi Cau nguyen chung con mong muon.
+
+## Them nhac Cau nguyen
+
+Dat file nhac vao mot trong ba thu muc:
+
+```text
+docs/assets/audio/prayers/reflection/
+docs/assets/audio/prayers/our-wishes/
+docs/assets/audio/prayers/united/
+```
+
+Sau do them ten bai va ten file vao `docs/js/prayer-data.js`.
 
 ## Login va route guard
 

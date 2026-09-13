@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cầu nguyện - Sion Làng Đại Học</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg?v=2">
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/prayer.css?v=20260914-1">
+</head>
+<body data-page="prayer" data-path-base="." class="prayer-page">
+  <header class="site-header">
+    <div class="header-top">
+      <div class="nav-inner">
+        <a class="brand" href="./home.html">
+          <span class="brand-mark">S</span>
+          <span>Sion Làng Đại Học</span>
+        </a>
+        <span class="header-label">Công cụ hỗ trợ</span>
+        <button class="nav-toggle" type="button" aria-label="Mở menu" aria-expanded="false" data-nav-toggle>
+          <span class="nav-toggle-lines"></span>
+        </button>
+      </div>
+    </div>
+    <nav class="nav-bar" aria-label="Điều hướng chính">
+      <div class="nav-inner">
+        <div class="nav-links" data-nav-links>
+          <a class="nav-link" href="./home.html" data-nav-page="home">Trang chủ</a>
+          <a class="nav-link" href="./tab-generator.html" data-nav-page="tab-generator">Trình tạo nhanh</a>
+          <a class="nav-link" href="./lucky-wheel.html" data-nav-page="lucky-wheel">Bốc thăm Giáo huấn</a>
+          <a class="nav-link" href="./prayer.html" data-nav-page="prayer">Cầu nguyện</a>
+        </div>
+        <div class="nav-meta">
+          <span class="nav-user" data-user-name></span>
+          <button class="nav-logout" type="button" data-logout>Đăng xuất</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page prayer-main">
+    <section class="page-banner prayer-banner">
+      <p class="eyebrow">Âm nhạc và lời cầu nguyện</p>
+      <h1>Cầu nguyện</h1>
+      <p class="lead">Bật nhanh một bài ngẫu nhiên hoặc mở từng phần để chọn bài muốn nghe.</p>
+      <p class="prayer-status" id="prayerStatus" aria-live="polite">Sẵn sàng.</p>
+    </section>
+
+    <section class="prayer-list" aria-label="Các phần cầu nguyện">
+      <article class="prayer-card" data-prayer-card="reflection">
+        <div class="prayer-card-row">
+          <button class="prayer-toggle" type="button" aria-expanded="false" aria-controls="reflectionDetails" data-prayer-toggle="reflection">
+            <span class="prayer-mark" aria-hidden="true">N</span>
+            <span class="prayer-heading">
+              <span class="prayer-kicker">Phần 1</span>
+              <strong>Cầu nguyện ngẫm nghĩ</strong>
+            </span>
+            <span class="prayer-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <button class="button prayer-random-button" type="button" data-random-play="reflection">
+            <span aria-hidden="true">▶</span>
+            Bật nhạc
+          </button>
+        </div>
+        <div class="prayer-details" id="reflectionDetails" hidden>
+          <div class="prayer-details-heading">
+            <h2>Danh sách bài nhạc</h2>
+            <p>Chọn trực tiếp bài bạn muốn nghe.</p>
+          </div>
+          <div class="prayer-track-list" data-track-list="reflection"></div>
+        </div>
+      </article>
+
+      <article class="prayer-card" data-prayer-card="our-wishes">
+        <div class="prayer-card-row">
+          <button class="prayer-toggle" type="button" aria-expanded="false" aria-controls="ourWishesDetails" data-prayer-toggle="our-wishes">
+            <span class="prayer-mark" aria-hidden="true">M</span>
+            <span class="prayer-heading">
+              <span class="prayer-kicker">Phần 2</span>
+              <strong>Cầu nguyện chúng con mong muốn</strong>
+            </span>
+            <span class="prayer-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <button class="button prayer-random-button" type="button" data-random-play="our-wishes">
+            <span aria-hidden="true">▶</span>
+            Bật nhạc
+          </button>
+        </div>
+        <div class="prayer-details" id="ourWishesDetails" hidden>
+          <div class="prayer-details-heading">
+            <h2>Nhạc và lời cầu nguyện</h2>
+            <p>Bạn có thể vừa nghe vừa theo dõi lời bên dưới.</p>
+          </div>
+          <div class="prayer-track-list" data-track-list="our-wishes"></div>
+
+          <article class="prayer-reading" aria-labelledby="ourWishesReadingTitle">
+            <header class="prayer-reading-header">
+              <p>U ri ê đan ha nun ki đô</p>
+              <h2 id="ourWishesReadingTitle">Cầu nguyện chúng con mong muốn</h2>
+            </header>
+            <div class="prayer-verses">
+              <p><strong>Ha-nu-rê kê-sin/A-bo-chi/An Xang Hông Nhìm</strong><span>Lạy thưa Cha Đấng An Xang Hông ngự trên trời!</span></p>
+              <p><strong>A-bo-chi-kê-so/Kang-nhim-ha-sil na-run/<br>Im-bắc-ha-yot-sa-ô-na</strong><span>Dù ngày Cha giáng lâm thật sắp kíp,</span></p>
+              <p><strong>U-ri-dư-run A-mu chun-bi-dô/Op-xa-ô-nhi</strong><span>nhưng chúng con vẫn chưa có sự chuẩn bị gì cả.</span></p>
+              <p><strong>A-bo-chi-yô U-ri-rưl/Bul-xang-hi/Yo-ki-si-kô</strong><span>Vậy, thưa Cha! Xin hãy thương xót chúng con,</span></p>
+              <p><strong>A-bo-chi-ê Xơng-nhông-u-rô mal-mi-a-ma<br>U-ri-rưl Ko-dưp-na-kê ha-sa</strong><span>và hầu cho chúng con được sanh lại mới<br>bởi Thánh Linh của Cha,</span></p>
+              <p><strong>A-bo-chi Kang-nhim-ha-sil Na-rê Bu-chôc-ha-mi op-xi</strong><span>để hầu cho chúng con đón tiếp được Cha không thiếu thốn gì</span></p>
+              <p><strong>Yơng-chop-ha-kê ha-yo'chu-ôp-sô-so.</strong><span>trong ngày Cha giáng lâm.</span></p>
+              <p><strong>Kư ri su đô An Xang Hông Nhìm I-rư-mư-rô</strong><span>Nhân danh Đấng Christ An Xang Hông</span></p>
+              <p><strong>Kan-ku-ha-ôp-na-i-da. Amen!</strong><span>chúng con cầu khẩn. Amen!</span></p>
+            </div>
+          </article>
+        </div>
+      </article>
+
+      <article class="prayer-card" data-prayer-card="united">
+        <div class="prayer-card-row">
+          <button class="prayer-toggle" type="button" aria-expanded="false" aria-controls="unitedDetails" data-prayer-toggle="united">
+            <span class="prayer-mark" aria-hidden="true">T</span>
+            <span class="prayer-heading">
+              <span class="prayer-kicker">Phần 3</span>
+              <strong>Cầu nguyện thống thanh</strong>
+            </span>
+            <span class="prayer-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <button class="button prayer-random-button" type="button" data-random-play="united">
+            <span aria-hidden="true">▶</span>
+            Bật nhạc
+          </button>
+        </div>
+        <div class="prayer-details" id="unitedDetails" hidden>
+          <div class="prayer-details-heading">
+            <h2>Danh sách bài nhạc</h2>
+            <p>Chọn trực tiếp bài bạn muốn nghe.</p>
+          </div>
+          <div class="prayer-track-list" data-track-list="united"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <section class="audio-dock" id="audioDock" aria-label="Trình phát nhạc" hidden>
+    <div class="audio-dock-copy">
+      <span class="audio-dock-label" id="audioSectionText">Đang phát</span>
+      <strong id="audioTitleText">Chưa chọn bài</strong>
+    </div>
+    <audio id="prayerAudio" controls preload="metadata"></audio>
+    <button class="audio-dock-close" type="button" id="audioDockClose" aria-label="Đóng trình phát">×</button>
+  </section>
+
+  <footer class="site-footer">
+    Chọn phần cầu nguyện và bài nhạc phù hợp cho buổi nhóm.
+  </footer>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/route-guard.js"></script>
+  <script src="./js/navigation.js"></script>
+  <script src="./js/prayer-data.js?v=20260914-1"></script>
+  <script src="./js/prayer.js?v=20260914-1"></script>
+</body>
+</html>
