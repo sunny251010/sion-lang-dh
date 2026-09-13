@@ -550,9 +550,16 @@ function getQuickProgramSelfTestResults_() {
     "Ngày 13 tháng 09 năm 2026",
     "Ngày 12 tháng 09 năm 2026"
   );
+  const afternoonContent = [
+    "Header không cần đúng tên buổi",
+    "2/ Đúng 14h Tuyên bố khai mạc:",
+    "TỪ BÂY GIỜ XIN TUYÊN BỐ BẮT ĐẦU LỄ THỜ PHƯỢNG BUỔI CHIỀU SABAT",
+    "Ngày 13 tháng 09 năm 2026"
+  ].join("\n");
 
   const morningSection = detectWorshipSection_(normalizeText_(morningContent));
   const eveningSection = detectWorshipSection_(normalizeText_(eveningContent));
+  const afternoonSection = detectWorshipSection_(normalizeText_(afternoonContent));
   const morning = parseProgramBlock_(morningSection, morningContent, today);
   const evening = parseProgramBlock_(eveningSection, eveningContent, today);
   const expired = parseProgramBlock_(eveningSection, expiredContent, today);
@@ -572,6 +579,10 @@ function getQuickProgramSelfTestResults_() {
     {
       name: "Tieu de sai khong anh huong buoi toi",
       passed: eveningSection === "evening"
+    },
+    {
+      name: "Nhan dien duoc buoi chieu",
+      passed: afternoonSection === "afternoon"
     },
     {
       name: "Hom nay duoc giu lai",

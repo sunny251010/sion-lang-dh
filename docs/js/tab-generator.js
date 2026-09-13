@@ -68,6 +68,20 @@
     return "Chạm để xem chương trình và danh sách tab cần mở.";
   }
 
+  function hasProgramContent(service) {
+    if (!service || typeof service !== "object") {
+      return false;
+    }
+
+    return Boolean(
+      String(service.rawContent || "").trim() ||
+      (Array.isArray(service.songs) && service.songs.length > 0) ||
+      isValidHttpUrl(service.sermonSite) ||
+      isValidHttpUrl(service.sermonYoutube) ||
+      isValidHttpUrl(service.sermonText)
+    );
+  }
+
   function formatUpdatedAt(value) {
     if (!value) {
       return "Chưa có thời gian cập nhật.";
@@ -402,7 +416,8 @@
   }
 
   function applyProgramData(data) {
-    services = Array.isArray(data.services) ? data.services : cloneServices(config.PROGRAM_FALLBACK);
+    const incomingServices = Array.isArray(data.services) ? data.services : [];
+    services = incomingServices.filter(hasProgramContent);
     setUpdatedAt(data.updatedAt || "");
   }
 
