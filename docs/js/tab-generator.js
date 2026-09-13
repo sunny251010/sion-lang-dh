@@ -42,10 +42,17 @@
   }
 
   function getPresentation(service) {
-    return SERVICE_PRESENTATION[service.id] || {
+    const presentation = SERVICE_PRESENTATION[service.id] || {
       label: service.label || "Buổi Sabat",
       tag: service.tag || "Sabat",
       icon: String(service.label || "B").charAt(0).toUpperCase()
+    };
+
+    return {
+      ...presentation,
+      // Backend moi tra label co kem gio, vi du "Buổi sáng 5h".
+      // Neu API cu khong co label thi van dung nhan mac dinh nhu truoc.
+      label: service.label || presentation.label
     };
   }
 
@@ -268,7 +275,7 @@
       <div class="program-modal-content">
         <header class="program-modal-header">
           <p class="eyebrow">${escapeHtml(presentation.tag)} Sabat</p>
-          <h2 id="programModalTitle">${escapeHtml(presentation.label)}${service.startTime ? ` - ${escapeHtml(service.startTime)}` : ""}</h2>
+          <h2 id="programModalTitle">${escapeHtml(presentation.label)}</h2>
           <p class="lead">${escapeHtml(summarizeService(service))}</p>
         </header>
         <div class="program-modal-scroll">
