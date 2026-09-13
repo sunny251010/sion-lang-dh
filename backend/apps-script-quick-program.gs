@@ -13,9 +13,9 @@
  * - Nhan dien buoi tu cau:
  *   "TU BAY GIO XIN TUYEN BO BAT DAU LE THO PHUONG BUOI ..."
  * - Lay gio tu cau "Dung 5h/19h30 Tuyen bo khai mac".
- * - Lay ngay tu noi dung, vi du "Ngay 14 thang 09 nam 2026".
- * - Chi nhan chuong trinh co ngay hom nay hoac trong tuong lai.
- * - Neu co nhieu chuong trinh cung mot buoi, chon ngay gan nhat.
+ * - Khong doc va khong loc theo ngay thang trong noi dung.
+ * - Ngay bi sai, da qua hoac khong duoc nhap deu khong anh huong.
+ * - Neu co nhieu chuong trinh cung mot buoi, chon block dau tien tren Form.
  *
  * File nay can cac helper da co trong Apps Script day du:
  * - getSetting_(key, fallbackValue)
@@ -39,13 +39,12 @@ function getProgramData_() {
     };
   }
 
-  const today = getProgramTodayParts_(new Date());
-  const candidates = readFormProgramCandidates_(today);
-  const tuesday = selectNearestProgram_(candidates, "tuesday");
+  const candidates = readFormProgramCandidates_();
+  const tuesday = selectProgram_(candidates, "tuesday");
   let services;
 
   // Giu nguyen uu tien cu: neu co chuong trinh Thu Ba Tinh Sach
-  // chua qua ngay thi chi tra ve chuong trinh nay.
+  // thi chi tra ve chuong trinh nay.
   if (tuesday) {
     services = [
       buildServiceFromCandidate_(
@@ -59,17 +58,17 @@ function getProgramData_() {
       buildServiceFromCandidate_(
         "morning",
         "Buổi sáng",
-        selectNearestProgram_(candidates, "morning")
+        selectProgram_(candidates, "morning")
       ),
       buildServiceFromCandidate_(
         "afternoon",
         "Buổi chiều",
-        selectNearestProgram_(candidates, "afternoon")
+        selectProgram_(candidates, "afternoon")
       ),
       buildServiceFromCandidate_(
         "evening",
         "Buổi tối",
-        selectNearestProgram_(candidates, "evening")
+        selectProgram_(candidates, "evening")
       )
     ];
   }
@@ -104,7 +103,7 @@ function getGoogleFormUrl_() {
  * duoc noi lai thanh rawContent; detectWorshipSection_ chi tim cau
  * tuyen bo khai mac nam trong noi dung do.
  */
-function readFormProgramCandidates_(today) {
+function readFormProgramCandidates_() {
   const form = FormApp.openByUrl(getGoogleFormUrl_());
   const items = form.getItems();
   const candidates = [];
@@ -129,7 +128,7 @@ function readFormProgramCandidates_(today) {
     );
 
     if (detectedSection) {
-      addProgramCandidate_(candidates, currentBlock, today);
+      addProgramCandidate_(candidates, currentBlock);
       currentBlock = {
         sectionId: detectedSection,
         parts: [combinedContent]
@@ -144,21 +143,17 @@ function readFormProgramCandidates_(today) {
     }
   });
 
-  addProgramCandidate_(candidates, currentBlock, today);
+  addProgramCandidate_(candidates, currentBlock);
   return candidates;
 }
 
-function addProgramCandidate_(candidates, block, today) {
+function addProgramCandidate_(candidates, block) {
   if (!block || !Array.isArray(block.parts)) {
     return;
   }
 
   const rawContent = block.parts.filter(Boolean).join("\n").trim();
-  const candidate = parseProgramBlock_(
-    block.sectionId,
-    rawContent,
-    today
-  );
+  const candidate = parseProgramBlock_(block.sectionId, rawContent);
 
   if (candidate) {
     candidates.push(candidate);
@@ -166,42 +161,29 @@ function addProgramCandidate_(candidates, block, today) {
 }
 
 /**
- * Tra null neu block khong co ngay hop le hoac ngay da qua.
+ * Ngay thang (neu co) chi la noi dung hien thi, khong duoc dung de loc.
  */
-function parseProgramBlock_(sectionId, rawContent, today) {
-  const programDate = extractProgramDate_(rawContent);
+function parseProgramBlock_(sectionId, rawContent) {
+  const normalizedContent = String(rawContent || "").trim();
 
-  if (!programDate) {
-    return null;
-  }
-
-  const todayParts = today || getProgramTodayParts_(new Date());
-  const todayKey = toProgramDateKey_(todayParts);
-  const programDateKey = toProgramDateKey_(programDate);
-
-  if (programDateKey < todayKey) {
+  if (!sectionId || !normalizedContent) {
     return null;
   }
 
   return {
     sectionId: sectionId,
-    rawContent: String(rawContent || "").trim(),
-    startTime: extractOpeningTime_(rawContent),
-    programDate: programDate,
-    programDateKey: programDateKey
+    rawContent: normalizedContent,
+    startTime: extractOpeningTime_(normalizedContent)
   };
 }
 
 /**
- * Neu mot buoi co nhieu ngay chua qua, chon ngay gan nhat.
+ * Neu mot buoi co nhieu block, chon block dau tien theo thu tu cua Form.
  */
-function selectNearestProgram_(candidates, sectionId) {
+function selectProgram_(candidates, sectionId) {
   const matchingCandidates = candidates
     .filter(function (candidate) {
       return candidate.sectionId === sectionId;
-    })
-    .sort(function (left, right) {
-      return left.programDateKey - right.programDateKey;
     });
 
   return matchingCandidates.length ? matchingCandidates[0] : null;
@@ -217,7 +199,7 @@ function buildServiceFromCandidate_(id, baseLabel, candidate) {
     baseLabel,
     candidate.rawContent,
     candidate.startTime,
-    candidate.programDate
+    null
   );
 }
 
@@ -262,40 +244,6 @@ function detectWorshipSection_(normalizedContent) {
 }
 
 /**
- * Ho tro cac dang:
- * - Ngay 14 thang 09 nam 2026
- * - Ngay 14/09/2026
- * - 14-09-2026
- */
-function extractProgramDate_(content) {
-  const text = normalizeText_(content);
-  const patterns = [
-    /\bNGAY\s+(\d{1,2})\s+THANG\s+(\d{1,2})\s+NAM\s+(\d{4})\b/,
-    /\b(?:NGAY\s+)?(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})\b/
-  ];
-
-  for (let index = 0; index < patterns.length; index += 1) {
-    const match = text.match(patterns[index]);
-
-    if (!match) {
-      continue;
-    }
-
-    const result = {
-      day: Number(match[1]),
-      month: Number(match[2]),
-      year: Number(match[3])
-    };
-
-    if (isValidProgramDate_(result)) {
-      return result;
-    }
-  }
-
-  return null;
-}
-
-/**
  * Lay gio o dung dong "Dung ... Tuyen bo khai mac".
  */
 function extractOpeningTime_(content) {
@@ -327,71 +275,6 @@ function extractOpeningTime_(content) {
   return minute === 0
     ? hour + "h"
     : hour + "h" + String(minute).padStart(2, "0");
-}
-
-function getProgramTodayParts_(date) {
-  // Website phuc vu tai Viet Nam, khong phu thuoc timezone mac dinh
-  // cua tai khoan tao Apps Script.
-  const timeZone = "Asia/Bangkok";
-  const value = Utilities.formatDate(
-    date || new Date(),
-    timeZone,
-    "yyyy-MM-dd"
-  ).split("-");
-
-  return {
-    year: Number(value[0]),
-    month: Number(value[1]),
-    day: Number(value[2])
-  };
-}
-
-function toProgramDateKey_(dateParts) {
-  return (
-    Number(dateParts.year) * 10000 +
-    Number(dateParts.month) * 100 +
-    Number(dateParts.day)
-  );
-}
-
-function isValidProgramDate_(dateParts) {
-  const year = Number(dateParts.year);
-  const month = Number(dateParts.month);
-  const day = Number(dateParts.day);
-
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day) ||
-    year < 2000 ||
-    year > 2100 ||
-    month < 1 ||
-    month > 12 ||
-    day < 1
-  ) {
-    return false;
-  }
-
-  const daysInMonth = [
-    31,
-    isLeapYear_(year) ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31
-  ];
-
-  return day <= daysInMonth[month - 1];
-}
-
-function isLeapYear_(year) {
-  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 }
 
 function formatProgramDate_(dateParts) {
@@ -531,7 +414,6 @@ function cleanUrl_(url) {
  * ========================================================= */
 
 function getQuickProgramSelfTestResults_() {
-  const today = { year: 2026, month: 9, day: 13 };
   const morningContent = [
     "BUỔI MAI TLCN ĐẠI LỄ CHUỘC TỘI",
     "1/ Hát BCM: 100 - 237 chuẩn bị trước giờ khai mạc",
@@ -550,6 +432,10 @@ function getQuickProgramSelfTestResults_() {
     "Ngày 13 tháng 09 năm 2026",
     "Ngày 12 tháng 09 năm 2026"
   );
+  const noDateContent = eveningContent.replace(
+    "Ngày 13 tháng 09 năm 2026",
+    ""
+  );
   const afternoonContent = [
     "Header không cần đúng tên buổi",
     "2/ Đúng 14h Tuyên bố khai mạc:",
@@ -560,17 +446,18 @@ function getQuickProgramSelfTestResults_() {
   const morningSection = detectWorshipSection_(normalizeText_(morningContent));
   const eveningSection = detectWorshipSection_(normalizeText_(eveningContent));
   const afternoonSection = detectWorshipSection_(normalizeText_(afternoonContent));
-  const morning = parseProgramBlock_(morningSection, morningContent, today);
-  const evening = parseProgramBlock_(eveningSection, eveningContent, today);
-  const expired = parseProgramBlock_(eveningSection, expiredContent, today);
+  const morning = parseProgramBlock_(morningSection, morningContent);
+  const evening = parseProgramBlock_(eveningSection, eveningContent);
+  const expired = parseProgramBlock_(eveningSection, expiredContent);
+  const noDate = parseProgramBlock_(eveningSection, noDateContent);
   const tests = [
     {
       name: "Buoi mai duoc nhan la morning",
       passed: morningSection === "morning"
     },
     {
-      name: "Ngay mai duoc giu lai",
-      passed: Boolean(morning) && morning.programDateKey === 20260914
+      name: "Ngay thang khong anh huong",
+      passed: Boolean(morning)
     },
     {
       name: "Lay dung gio 5h",
@@ -585,16 +472,20 @@ function getQuickProgramSelfTestResults_() {
       passed: afternoonSection === "afternoon"
     },
     {
-      name: "Hom nay duoc giu lai",
-      passed: Boolean(evening) && evening.programDateKey === 20260913
+      name: "Co ngay cu van duoc giu lai",
+      passed: Boolean(evening)
     },
     {
       name: "Lay dung gio 19h30",
       passed: Boolean(evening) && evening.startTime === "19h30"
     },
     {
-      name: "Ngay hom qua bi loai",
-      passed: expired === null
+      name: "Ngay hom qua khong bi loai",
+      passed: Boolean(expired)
+    },
+    {
+      name: "Khong co ngay van duoc nhan",
+      passed: Boolean(noDate)
     },
     {
       name: "Giu logic lay danh sach bai ca",
