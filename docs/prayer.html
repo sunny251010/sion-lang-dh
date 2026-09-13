@@ -6,7 +6,7 @@
   <title>Cầu nguyện - Sion Làng Đại Học</title>
   <link rel="icon" type="image/svg+xml" href="./assets/icons/favicon.svg?v=2">
   <link rel="stylesheet" href="./css/global.css">
-  <link rel="stylesheet" href="./css/prayer.css?v=20260914-1">
+  <link rel="stylesheet" href="./css/prayer.css?v=20260914-2">
 </head>
 <body data-page="prayer" data-path-base="." class="prayer-page">
   <header class="site-header">
@@ -95,8 +95,14 @@
 
           <article class="prayer-reading" aria-labelledby="ourWishesReadingTitle">
             <header class="prayer-reading-header">
-              <p>U ri ê đan ha nun ki đô</p>
-              <h2 id="ourWishesReadingTitle">Cầu nguyện chúng con mong muốn</h2>
+              <div class="prayer-reading-heading">
+                <p>U ri ê đan ha nun ki đô</p>
+                <h2 id="ourWishesReadingTitle">Cầu nguyện chúng con mong muốn</h2>
+              </div>
+              <button class="prayer-reading-expand" type="button" id="openPrayerReadingModal" aria-label="Phóng to lời cầu nguyện">
+                <span aria-hidden="true">⛶</span>
+                <span>Phóng to</span>
+              </button>
             </header>
             <div class="prayer-verses">
               <p><strong>Ha-nu-rê kê-sin/A-bo-chi/An Xang Hông Nhìm</strong><span>Lạy thưa Cha Đấng An Xang Hông ngự trên trời!</span></p>
@@ -139,6 +145,27 @@
     </section>
   </main>
 
+  <div class="prayer-reading-modal-overlay" id="prayerReadingModalOverlay" hidden>
+    <section class="prayer-reading-modal" id="prayerReadingModal" role="dialog" aria-modal="true" aria-labelledby="prayerReadingModalTitle" tabindex="-1">
+      <header class="prayer-modal-toolbar">
+        <div>
+          <p>U ri ê đan ha nun ki đô</p>
+          <h2 id="prayerReadingModalTitle">Cầu nguyện chúng con mong muốn</h2>
+        </div>
+        <div class="prayer-modal-actions">
+          <button class="prayer-layout-toggle" type="button" id="prayerLayoutToggle" aria-pressed="false">
+            <span aria-hidden="true">▥</span>
+            <span data-layout-label>Chia 2 cột</span>
+          </button>
+          <button class="prayer-modal-close" type="button" id="closePrayerReadingModal" aria-label="Đóng phần phóng to">×</button>
+        </div>
+      </header>
+      <div class="prayer-modal-document">
+        <div class="prayer-modal-verses" id="prayerModalVerses"></div>
+      </div>
+    </section>
+  </div>
+
   <section class="audio-dock" id="audioDock" aria-label="Trình phát nhạc" hidden>
     <div class="audio-dock-copy">
       <span class="audio-dock-label" id="audioSectionText">Đang phát</span>
@@ -158,6 +185,6 @@
   <script src="./js/route-guard.js"></script>
   <script src="./js/navigation.js"></script>
   <script src="./js/prayer-data.js?v=20260914-1"></script>
-  <script src="./js/prayer.js?v=20260914-1"></script>
+  <script src="./js/prayer.js?v=20260914-2"></script>
 </body>
 </html>

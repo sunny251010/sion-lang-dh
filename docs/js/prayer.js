@@ -4,6 +4,7 @@
     : [];
 
   let currentTrackUrl = "";
+  let prayerModalLastFocus = null;
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -168,6 +169,54 @@
     document.body.classList.remove("has-audio-dock");
   }
 
+  function setPrayerModalLayout(shouldSplit) {
+    const verses = document.getElementById("prayerModalVerses");
+    const toggle = document.getElementById("prayerLayoutToggle");
+    const label = toggle.querySelector("[data-layout-label]");
+
+    verses.classList.toggle("is-split", shouldSplit);
+    toggle.setAttribute("aria-pressed", String(shouldSplit));
+    label.textContent = shouldSplit ? "Gộp 1 cột" : "Chia 2 cột";
+  }
+
+  function openPrayerReadingModal() {
+    const overlay = document.getElementById("prayerReadingModalOverlay");
+    const modal = document.getElementById("prayerReadingModal");
+    const modalVerses = document.getElementById("prayerModalVerses");
+    const sourceVerses = document.querySelector(".prayer-reading .prayer-verses");
+
+    if (!overlay || !modal || !modalVerses || !sourceVerses) {
+      return;
+    }
+
+    prayerModalLastFocus = document.activeElement;
+    modalVerses.innerHTML = sourceVerses.innerHTML;
+    setPrayerModalLayout(window.matchMedia("(max-width: 700px)").matches);
+    overlay.hidden = false;
+    document.body.classList.add("prayer-modal-open");
+    modal.focus();
+  }
+
+  function closePrayerReadingModal() {
+    const overlay = document.getElementById("prayerReadingModalOverlay");
+
+    if (!overlay || overlay.hidden) {
+      return;
+    }
+
+    overlay.hidden = true;
+    document.body.classList.remove("prayer-modal-open");
+
+    if (prayerModalLastFocus && typeof prayerModalLastFocus.focus === "function") {
+      prayerModalLastFocus.focus();
+    }
+  }
+
+  function togglePrayerModalLayout() {
+    const toggle = document.getElementById("prayerLayoutToggle");
+    setPrayerModalLayout(toggle.getAttribute("aria-pressed") !== "true");
+  }
+
   function bindEvents() {
     document.querySelectorAll("[data-prayer-toggle]").forEach((button) => {
       button.addEventListener("click", () => toggleSection(button.dataset.prayerToggle));
@@ -190,6 +239,21 @@
     document.getElementById("audioDockClose").addEventListener("click", closeAudioDock);
     document.getElementById("prayerAudio").addEventListener("error", () => {
       setStatus("File nhạc không tồn tại hoặc không đọc được.", "error");
+    });
+
+    document.getElementById("openPrayerReadingModal").addEventListener("click", openPrayerReadingModal);
+    document.getElementById("closePrayerReadingModal").addEventListener("click", closePrayerReadingModal);
+    document.getElementById("prayerLayoutToggle").addEventListener("click", togglePrayerModalLayout);
+    document.getElementById("prayerReadingModalOverlay").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) {
+        closePrayerReadingModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closePrayerReadingModal();
+      }
     });
   }
 
