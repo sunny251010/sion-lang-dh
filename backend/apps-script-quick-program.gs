@@ -40,10 +40,6 @@ function getProgramData_() {
   }
 
   const selected = selectProgramSet_(readFormProgramCandidates_());
-  const eveningLabel = selected.evening &&
-    selected.evening.sectionId === "tuesday"
-    ? "Buổi tối Thứ Ba Tinh Sạch"
-    : "Buổi tối";
   const services = [
     buildServiceFromCandidate_(
       "morning",
@@ -57,7 +53,7 @@ function getProgramData_() {
     ),
     buildServiceFromCandidate_(
       "evening",
-      eveningLabel,
+      "Buổi tối",
       selected.evening
     )
   ];
@@ -166,16 +162,33 @@ function addProgramCandidate_(candidates, block) {
  */
 function parseProgramBlock_(sectionId, rawContent) {
   const normalizedContent = String(rawContent || "").trim();
+  const startTime = extractOpeningTime_(normalizedContent);
 
-  if (!sectionId || !normalizedContent) {
+  if (
+    !sectionId ||
+    !normalizedContent ||
+    !hasMeaningfulProgramContent_(normalizedContent, startTime)
+  ) {
     return null;
   }
 
   return {
     sectionId: sectionId,
     rawContent: normalizedContent,
-    startTime: extractOpeningTime_(normalizedContent)
+    startTime: startTime,
+    label: extractProgramLabel_(normalizedContent, sectionId)
   };
+}
+
+function hasMeaningfulProgramContent_(content, startTime) {
+  const text = String(content || "");
+
+  return Boolean(
+    startTime ||
+    extractSongs_(text).length ||
+    /(?:^|\n)\s*\d+\s*\/\s*\S/m.test(text) ||
+    /https?:\/\//i.test(text)
+  );
 }
 
 /**
@@ -220,7 +233,7 @@ function buildServiceFromCandidate_(id, baseLabel, candidate) {
 
   return buildService_(
     id,
-    baseLabel,
+    candidate.label || baseLabel,
     candidate.rawContent,
     candidate.startTime,
     null
@@ -271,6 +284,46 @@ function isWorshipHeading_(title) {
   return /^BUOI\s+(?:MAI|SANG|CHIEU|TOI)\b/.test(
     normalizeText_(title)
   );
+}
+
+/**
+ * Lay ten buoi tu cau tuyen bo trong noi dung, khong dung title cua Form.
+ */
+function extractProgramLabel_(content, sectionId) {
+  const text = normalizeText_(content);
+  const declaration =
+    "TU BAY GIO XIN TUYEN BO BAT DAU LE THO PHUONG";
+  const declarationIndex = text.indexOf(declaration);
+  const declarationText = declarationIndex >= 0
+    ? text.slice(declarationIndex, declarationIndex + 260)
+    : text;
+
+  if (sectionId === "morning") {
+    return /BUOI MAI\b/.test(declarationText)
+      ? "Buổi mai"
+      : "Buổi sáng";
+  }
+
+  if (sectionId === "afternoon") {
+    return "Buổi chiều";
+  }
+
+  if (
+    sectionId === "tuesday" ||
+    /BUOI TOI THU (?:3|BA) TINH SACH\b/.test(declarationText)
+  ) {
+    return "Buổi tối Thứ Ba Tinh Sạch";
+  }
+
+  if (/BUOI TOI[^\n]{0,140}TUAN LE CAU NGUYEN\b/.test(declarationText)) {
+    return "Buổi tối Tuần lễ Cầu nguyện";
+  }
+
+  if (/BUOI TOI[^\n]{0,140}SABAT\b/.test(declarationText)) {
+    return "Buổi tối Sabat";
+  }
+
+  return "Buổi tối";
 }
 
 /**
@@ -498,6 +551,10 @@ function getQuickProgramSelfTestResults_() {
       startTime: ""
     }
   ]);
+  const emptyEvening = parseProgramBlock_(
+    "evening",
+    "TỪ BÂY GIỜ XIN TUYÊN BỐ BẮT ĐẦU LỄ THỜ PHƯỢNG BUỔI TỐI SABAT"
+  );
   const tests = [
     {
       name: "Buoi mai duoc nhan la morning",
@@ -510,6 +567,10 @@ function getQuickProgramSelfTestResults_() {
     {
       name: "Lay dung gio 5h",
       passed: Boolean(morning) && morning.startTime === "5h"
+    },
+    {
+      name: "Doc dung nhan Buoi mai tu noi dung",
+      passed: Boolean(morning) && morning.label === "Buổi mai"
     },
     {
       name: "Tieu de sai khong anh huong buoi toi",
@@ -548,6 +609,10 @@ function getQuickProgramSelfTestResults_() {
       passed:
         selectedFestivalPrograms.evening.sectionId === "tuesday" &&
         selectedFestivalPrograms.evening.startTime === "19h30"
+    },
+    {
+      name: "Bo qua buoi toi khong co noi dung",
+      passed: emptyEvening === null
     },
     {
       name: "Nhan biet heading buoi toi rong",

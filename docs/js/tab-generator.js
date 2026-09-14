@@ -1,6 +1,9 @@
 (function () {
   const config = window.APP_CONFIG;
   const api = window.SionApi;
+  const prayerLibrary = Array.isArray(window.PRAYER_AUDIO_LIBRARY)
+    ? window.PRAYER_AUDIO_LIBRARY
+    : [];
   const SERVICE_PRESENTATION = {
     morning: { label: "Buổi sáng", tag: "Sáng", icon: "S" },
     afternoon: { label: "Buổi chiều", tag: "Chiều", icon: "C" },
@@ -11,6 +14,8 @@
   let activeServiceId = "";
   let lastFocusedElement = null;
   let isRefreshing = false;
+  let currentPrayerUrl = "";
+  let prayerModalLastFocus = null;
 
   function cloneServices(list) {
     return JSON.parse(JSON.stringify(list));
@@ -47,12 +52,16 @@
       tag: service.tag || "Sabat",
       icon: String(service.label || "B").charAt(0).toUpperCase()
     };
+    const serviceLabel = String(service.label || "").trim();
+    const isEarlyMorning = service.id === "morning" && /^Buổi mai\b/i.test(serviceLabel);
 
     return {
       ...presentation,
       // Backend moi tra label co kem gio, vi du "Buổi sáng 5h".
       // Neu API cu khong co label thi van dung nhan mac dinh nhu truoc.
-      label: service.label || presentation.label
+      label: serviceLabel || presentation.label,
+      tag: isEarlyMorning ? "Mai" : presentation.tag,
+      icon: isEarlyMorning ? "M" : presentation.icon
     };
   }
 
@@ -309,11 +318,18 @@
             Trình duyệt có thể đang chặn popup. Hãy cho phép mở cửa sổ cho trang này rồi thử lại.
           </div>
         </div>
-        <div class="button-row">
-          <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
-          <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
-          <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
-          <button class="button secondary" type="button" id="programModalCloseButton">Đóng</button>
+        <div class="program-modal-actions">
+          <div class="program-prayer-actions" aria-label="Nhạc cầu nguyện">
+            <button class="button prayer-action-button" type="button" data-program-prayer="reflection">CN ngẫm nghĩ</button>
+            <button class="button prayer-action-button" type="button" data-program-prayer="our-wishes">CN chúng con mong muốn</button>
+            <button class="button prayer-action-button" type="button" data-program-prayer="united">CN thống thanh</button>
+          </div>
+          <div class="program-tab-actions">
+            <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
+            <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
+            <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
+            <button class="button secondary" type="button" id="programModalCloseButton">Đóng</button>
+          </div>
         </div>
       </div>
     `;
@@ -332,6 +348,104 @@
 
     document.getElementById("openSelectedTabsButton").addEventListener("click", openSelectedTabs);
     document.getElementById("programModalCloseButton").addEventListener("click", closeProgramModal);
+    content.querySelectorAll("[data-program-prayer]").forEach((button) => {
+      button.addEventListener("click", () => playProgramPrayer(button.dataset.programPrayer));
+    });
+  }
+
+  function getPrayerSection(sectionId) {
+    return prayerLibrary.find((section) => section.id === sectionId) || null;
+  }
+
+  function buildPrayerUrl(section, track) {
+    const file = String(track.file || "").trim();
+
+    if (/^https?:\/\//i.test(file) || file.startsWith("./")) {
+      return file;
+    }
+
+    return `${section.folder}${file}`;
+  }
+
+  async function playProgramPrayer(sectionId) {
+    const section = getPrayerSection(sectionId);
+    const track = section && Array.isArray(section.tracks)
+      ? section.tracks[0]
+      : null;
+
+    if (!section || !track) {
+      setStatus("Chưa có file nhạc cho phần cầu nguyện này.", "error");
+      return;
+    }
+
+    if (sectionId === "our-wishes") {
+      openQuickPrayerModal();
+    }
+
+    const audio = document.getElementById("quickPrayerAudio");
+    const dock = document.getElementById("quickPrayerAudioDock");
+    const trackUrl = buildPrayerUrl(section, track);
+
+    if (currentPrayerUrl !== trackUrl) {
+      audio.src = trackUrl;
+      currentPrayerUrl = trackUrl;
+    }
+
+    document.getElementById("quickPrayerAudioTitle").textContent =
+      track.title || section.title;
+    dock.hidden = false;
+
+    try {
+      await audio.play();
+      setStatus(`Đang phát: ${track.title || section.title}.`);
+    } catch (error) {
+      setStatus("Chưa phát được nhạc cầu nguyện. Vui lòng thử lại.", "error");
+    }
+  }
+
+  function closeQuickPrayerAudio() {
+    const audio = document.getElementById("quickPrayerAudio");
+    audio.pause();
+    document.getElementById("quickPrayerAudioDock").hidden = true;
+  }
+
+  function setQuickPrayerLayout(shouldSplit) {
+    const verses = document.querySelector(".quick-prayer-verses");
+    const toggle = document.getElementById("quickPrayerLayoutToggle");
+    const label = toggle.querySelector("[data-quick-prayer-layout-label]");
+
+    verses.classList.toggle("is-split", shouldSplit);
+    toggle.setAttribute("aria-pressed", String(shouldSplit));
+    label.textContent = shouldSplit ? "Gộp 1 cột" : "Chia 2 cột";
+  }
+
+  function openQuickPrayerModal() {
+    const overlay = document.getElementById("quickPrayerModalOverlay");
+    const modal = document.getElementById("quickPrayerModal");
+    const programModal = document.getElementById("programModal");
+    prayerModalLastFocus = document.activeElement;
+    setQuickPrayerLayout(window.matchMedia("(max-width: 700px)").matches);
+    programModal.setAttribute("aria-hidden", "true");
+    overlay.hidden = false;
+    document.body.classList.add("quick-prayer-open");
+    modal.focus();
+  }
+
+  function closeQuickPrayerModal() {
+    const overlay = document.getElementById("quickPrayerModalOverlay");
+    const programModal = document.getElementById("programModal");
+
+    if (overlay.hidden) {
+      return;
+    }
+
+    overlay.hidden = true;
+    programModal.removeAttribute("aria-hidden");
+    document.body.classList.remove("quick-prayer-open");
+
+    if (prayerModalLastFocus && typeof prayerModalLastFocus.focus === "function") {
+      prayerModalLastFocus.focus();
+    }
   }
 
   function openProgramModal(serviceId) {
@@ -459,6 +573,7 @@
 
   function bindModalEvents() {
     const { overlay, closeIcon } = getModalElements();
+    const prayerOverlay = document.getElementById("quickPrayerModalOverlay");
 
     closeIcon.addEventListener("click", closeProgramModal);
     overlay.addEventListener("click", (event) => {
@@ -468,9 +583,33 @@
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !overlay.hidden) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (!prayerOverlay.hidden) {
+        closeQuickPrayerModal();
+        return;
+      }
+
+      if (!overlay.hidden) {
         closeProgramModal();
       }
+    });
+
+    document.getElementById("quickPrayerModalClose").addEventListener("click", closeQuickPrayerModal);
+    document.getElementById("quickPrayerLayoutToggle").addEventListener("click", () => {
+      const toggle = document.getElementById("quickPrayerLayoutToggle");
+      setQuickPrayerLayout(toggle.getAttribute("aria-pressed") !== "true");
+    });
+    prayerOverlay.addEventListener("click", (event) => {
+      if (event.target === prayerOverlay) {
+        closeQuickPrayerModal();
+      }
+    });
+    document.getElementById("quickPrayerAudioClose").addEventListener("click", closeQuickPrayerAudio);
+    document.getElementById("quickPrayerAudio").addEventListener("error", () => {
+      setStatus("File nhạc cầu nguyện không đọc được.", "error");
     });
   }
 
