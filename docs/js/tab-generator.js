@@ -4,6 +4,7 @@
   const prayerLibrary = Array.isArray(window.PRAYER_AUDIO_LIBRARY)
     ? window.PRAYER_AUDIO_LIBRARY
     : [];
+  const PROGRAM_CACHE_KEY = `${config.PROGRAM_CACHE_KEY}:v2`;
   const SERVICE_PRESENTATION = {
     morning: { label: "Buổi sáng", tag: "Sáng", icon: "S" },
     afternoon: { label: "Buổi chiều", tag: "Chiều", icon: "C" },
@@ -113,7 +114,7 @@
 
   function loadProgramCache() {
     try {
-      const rawCache = localStorage.getItem(config.PROGRAM_CACHE_KEY);
+      const rawCache = localStorage.getItem(PROGRAM_CACHE_KEY);
 
       if (!rawCache) {
         return null;
@@ -126,13 +127,13 @@
         Date.now() - cache.cachedAt < getProgramCacheTtl();
 
       if (!isFresh) {
-        localStorage.removeItem(config.PROGRAM_CACHE_KEY);
+        localStorage.removeItem(PROGRAM_CACHE_KEY);
         return null;
       }
 
       return cache;
     } catch (error) {
-      localStorage.removeItem(config.PROGRAM_CACHE_KEY);
+      localStorage.removeItem(PROGRAM_CACHE_KEY);
       return null;
     }
   }
@@ -140,7 +141,7 @@
   function saveProgramCache(data) {
     try {
       localStorage.setItem(
-        config.PROGRAM_CACHE_KEY,
+        PROGRAM_CACHE_KEY,
         JSON.stringify({
           services: data.services,
           updatedAt: data.updatedAt || "",
