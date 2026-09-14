@@ -191,7 +191,7 @@
 
     prayerModalLastFocus = document.activeElement;
     modalVerses.innerHTML = sourceVerses.innerHTML;
-    setPrayerModalLayout(window.matchMedia("(max-width: 700px)").matches);
+    setPrayerModalLayout(true);
     overlay.hidden = false;
     document.body.classList.add("prayer-modal-open");
     modal.focus();

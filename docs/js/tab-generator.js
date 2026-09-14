@@ -458,7 +458,7 @@
     const modal = document.getElementById("quickPrayerModal");
     const programWorkspace = document.getElementById("programWorkspace");
     prayerModalLastFocus = document.activeElement;
-    setQuickPrayerLayout(window.matchMedia("(max-width: 700px)").matches);
+    setQuickPrayerLayout(true);
     programWorkspace.setAttribute("aria-hidden", "true");
     overlay.hidden = false;
     document.body.classList.add("quick-prayer-open");
