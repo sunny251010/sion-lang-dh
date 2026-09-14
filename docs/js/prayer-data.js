@@ -4,8 +4,10 @@ window.PRAYER_AUDIO_LIBRARY = [
     title: "Cầu nguyện ngẫm nghĩ",
     folder: "./assets/audio/prayers/reflection/",
     tracks: [
-      // Ví dụ sau khi thêm file:
-      // { title: "Ngẫm nghĩ 01", file: "ngam-nghi-01.mp3" }
+      {
+        title: "Cầu nguyện ngẫm nghĩ",
+        file: "cau-nguyen-ngam-nghi.m4a"
+      }
     ]
   },
   {
@@ -13,7 +15,10 @@ window.PRAYER_AUDIO_LIBRARY = [
     title: "Cầu nguyện chúng con mong muốn",
     folder: "./assets/audio/prayers/our-wishes/",
     tracks: [
-      // { title: "Chúng con mong muốn", file: "chung-con-mong-muon.mp3" }
+      {
+        title: "Cầu nguyện chúng con mong muốn",
+        file: "cau-nguyen-chung-con-mong-muon.m4a"
+      }
     ]
   },
   {
@@ -21,7 +26,10 @@ window.PRAYER_AUDIO_LIBRARY = [
     title: "Cầu nguyện thống thanh",
     folder: "./assets/audio/prayers/united/",
     tracks: [
-      // { title: "Cầu nguyện thống thanh", file: "thong-thanh.mp3" }
+      {
+        title: "Cầu nguyện thống thanh",
+        file: "cau-nguyen-thong-thanh.m4a"
+      }
     ]
   }
 ];

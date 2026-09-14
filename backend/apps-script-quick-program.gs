@@ -39,39 +39,28 @@ function getProgramData_() {
     };
   }
 
-  const candidates = readFormProgramCandidates_();
-  const tuesday = selectProgram_(candidates, "tuesday");
-  let services;
-
-  // Giu nguyen uu tien cu: neu co chuong trinh Thu Ba Tinh Sach
-  // thi chi tra ve chuong trinh nay.
-  if (tuesday) {
-    services = [
-      buildServiceFromCandidate_(
-        "evening",
-        "Buổi tối Thứ Ba Tinh Sạch",
-        tuesday
-      )
-    ];
-  } else {
-    services = [
-      buildServiceFromCandidate_(
-        "morning",
-        "Buổi sáng",
-        selectProgram_(candidates, "morning")
-      ),
-      buildServiceFromCandidate_(
-        "afternoon",
-        "Buổi chiều",
-        selectProgram_(candidates, "afternoon")
-      ),
-      buildServiceFromCandidate_(
-        "evening",
-        "Buổi tối",
-        selectProgram_(candidates, "evening")
-      )
-    ];
-  }
+  const selected = selectProgramSet_(readFormProgramCandidates_());
+  const eveningLabel = selected.evening &&
+    selected.evening.sectionId === "tuesday"
+    ? "Buổi tối Thứ Ba Tinh Sạch"
+    : "Buổi tối";
+  const services = [
+    buildServiceFromCandidate_(
+      "morning",
+      "Buổi sáng",
+      selected.morning
+    ),
+    buildServiceFromCandidate_(
+      "afternoon",
+      "Buổi chiều",
+      selected.afternoon
+    ),
+    buildServiceFromCandidate_(
+      "evening",
+      eveningLabel,
+      selected.evening
+    )
+  ];
 
   return {
     success: true,
@@ -136,6 +125,18 @@ function readFormProgramCandidates_() {
       return;
     }
 
+    // Mot section moi chi co tieu de BUOI ... la moc ket thuc block
+    // truoc do. Khong noi cac placeholder rong vao noi dung chuong trinh.
+    if (
+      currentBlock &&
+      itemContent.isSectionBoundary &&
+      isWorshipHeading_(itemContent.title)
+    ) {
+      addProgramCandidate_(candidates, currentBlock);
+      currentBlock = null;
+      return;
+    }
+
     // Sau khi gap cau tuyen bo, cac item tiep theo van thuoc cung buoi
     // cho den khi gap cau tuyen bo cua buoi moi.
     if (currentBlock) {
@@ -187,6 +188,29 @@ function selectProgram_(candidates, sectionId) {
     });
 
   return matchingCandidates.length ? matchingCandidates[0] : null;
+}
+
+/**
+ * Lay cac buoi sang/chieu nam truoc chuong trinh buoi toi dau tien.
+ * Sau buoi toi dau tien, moi block buoi toi khac deu bi bo qua.
+ */
+function selectProgramSet_(candidates) {
+  const list = Array.isArray(candidates) ? candidates : [];
+  const eveningIndex = list.findIndex(function (candidate) {
+    return (
+      candidate.sectionId === "tuesday" ||
+      candidate.sectionId === "evening"
+    );
+  });
+  const beforeEvening = eveningIndex >= 0
+    ? list.slice(0, eveningIndex)
+    : list;
+
+  return {
+    morning: selectProgram_(beforeEvening, "morning"),
+    afternoon: selectProgram_(beforeEvening, "afternoon"),
+    evening: eveningIndex >= 0 ? list[eveningIndex] : null
+  };
 }
 
 function buildServiceFromCandidate_(id, baseLabel, candidate) {
@@ -241,6 +265,12 @@ function detectWorshipSection_(normalizedContent) {
   }
 
   return null;
+}
+
+function isWorshipHeading_(title) {
+  return /^BUOI\s+(?:MAI|SANG|CHIEU|TOI)\b/.test(
+    normalizeText_(title)
+  );
 }
 
 /**
@@ -325,7 +355,10 @@ function getItemContent_(item) {
 
   return {
     title: title,
-    helpText: helpText
+    helpText: helpText,
+    isSectionBoundary:
+      type === FormApp.ItemType.PAGE_BREAK ||
+      type === FormApp.ItemType.SECTION_HEADER
   };
 }
 
@@ -448,8 +481,23 @@ function getQuickProgramSelfTestResults_() {
   const afternoonSection = detectWorshipSection_(normalizeText_(afternoonContent));
   const morning = parseProgramBlock_(morningSection, morningContent);
   const evening = parseProgramBlock_(eveningSection, eveningContent);
+  const afternoon = parseProgramBlock_(afternoonSection, afternoonContent);
   const expired = parseProgramBlock_(eveningSection, expiredContent);
   const noDate = parseProgramBlock_(eveningSection, noDateContent);
+  const selectedFestivalPrograms = selectProgramSet_([
+    morning,
+    afternoon,
+    {
+      sectionId: "tuesday",
+      rawContent: eveningContent,
+      startTime: "19h30"
+    },
+    {
+      sectionId: "evening",
+      rawContent: "BUỔI TỐI SABAT",
+      startTime: ""
+    }
+  ]);
   const tests = [
     {
       name: "Buoi mai duoc nhan la morning",
@@ -486,6 +534,24 @@ function getQuickProgramSelfTestResults_() {
     {
       name: "Khong co ngay van duoc nhan",
       passed: Boolean(noDate)
+    },
+    {
+      name: "Giu buoi sang truoc Thu Ba Tinh Sach",
+      passed: selectedFestivalPrograms.morning === morning
+    },
+    {
+      name: "Giu buoi chieu truoc Thu Ba Tinh Sach",
+      passed: selectedFestivalPrograms.afternoon === afternoon
+    },
+    {
+      name: "Chi lay buoi toi dau tien",
+      passed:
+        selectedFestivalPrograms.evening.sectionId === "tuesday" &&
+        selectedFestivalPrograms.evening.startTime === "19h30"
+    },
+    {
+      name: "Nhan biet heading buoi toi rong",
+      passed: isWorshipHeading_("BUỔI TỐI SABAT")
     },
     {
       name: "Giu logic lay danh sach bai ca",
