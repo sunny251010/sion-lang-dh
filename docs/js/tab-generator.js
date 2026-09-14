@@ -66,6 +66,24 @@
     };
   }
 
+  function getShortServiceLabel(service) {
+    const label = String(service.label || "").trim();
+
+    if (service.id === "morning") {
+      return /^Buổi mai\b/i.test(label) ? "Buổi mai" : "Buổi sáng";
+    }
+
+    if (service.id === "afternoon") {
+      return "Buổi chiều";
+    }
+
+    if (service.id === "evening") {
+      return "Buổi tối";
+    }
+
+    return label || "Buổi thờ phượng";
+  }
+
   function summarizeService(service) {
     if (service.summary) {
       return service.summary;
@@ -251,7 +269,7 @@
     servicesContainer.setAttribute("aria-busy", String(isRefreshing));
 
     servicesContainer.querySelectorAll("[data-service]").forEach((button) => {
-      button.addEventListener("click", () => openProgramModal(button.dataset.service));
+      button.addEventListener("click", () => openProgramView(button.dataset.service));
     });
   }
 
@@ -267,18 +285,21 @@
     renderServices();
   }
 
-  function getModalElements() {
+  function getProgramElements() {
     return {
-      overlay: document.getElementById("programModalOverlay"),
-      modal: document.getElementById("programModal"),
-      content: document.getElementById("programModalContent"),
-      closeIcon: document.getElementById("programModalCloseIcon")
+      home: document.getElementById("programHomeView"),
+      workspace: document.getElementById("programWorkspace"),
+      content: document.getElementById("programWorkspaceContent")
     };
   }
 
-  function renderProgramModal(service) {
-    const { content } = getModalElements();
+  function renderProgramView(service) {
+    const { content } = getProgramElements();
     const presentation = getPresentation(service);
+    const shortLabel = getShortServiceLabel(service);
+    const songSummary = Array.isArray(service.songs) && service.songs.length
+      ? service.songs.join(" - ")
+      : "Chưa có bài ca";
     const targets = buildTabTargets(service);
     const tabItems = targets
       .map((target, index) => `
@@ -296,42 +317,54 @@
       .join("");
 
     content.innerHTML = `
-      <div class="program-modal-content">
-        <header class="program-modal-header">
-          <p class="eyebrow">${escapeHtml(presentation.tag)} Sabat</p>
-          <h2 id="programModalTitle">${escapeHtml(presentation.label)}</h2>
-          <p class="lead">${escapeHtml(summarizeService(service))}</p>
-        </header>
-        <div class="program-modal-scroll">
+      <div class="program-page-layout">
+        <aside class="program-sidebar program-prayer-sidebar" aria-label="Nhạc cầu nguyện">
+          <div class="program-sidebar-sticky">
+            <p class="program-sidebar-title">Cầu nguyện</p>
+            <div class="program-prayer-actions">
+              <button class="button prayer-action-button" type="button" data-program-prayer="reflection">CN ngẫm nghĩ</button>
+              <button class="button prayer-action-button" type="button" data-program-prayer="our-wishes">CN chúng con mong muốn</button>
+              <button class="button prayer-action-button" type="button" data-program-prayer="united">CN thống thanh</button>
+            </div>
+          </div>
+        </aside>
+
+        <article class="program-document">
+          <header class="program-compact-header">
+            <span class="program-session-mark" aria-hidden="true">${escapeHtml(presentation.icon)}</span>
+            <h1 id="programPageTitle" tabindex="-1">${escapeHtml(shortLabel)}</h1>
+            <p class="program-song-line"><strong>Bài ca mới:</strong> ${escapeHtml(songSummary)}</p>
+          </header>
+
           ${service.openingText ? `<div class="announcement">${escapeHtml(service.openingText)}</div>` : ""}
           ${service.rawContent ? `
-            <div class="resource-group">
-              <strong>Nội dung chương trình</strong>
+            <section class="program-content-section" aria-labelledby="programContentTitle">
+              <h2 id="programContentTitle">Nội dung chương trình</h2>
               <div class="raw-content">${escapeHtml(service.rawContent)}</div>
-            </div>
+            </section>
           ` : ""}
-          <div class="resource-group">
-            <strong>Danh sách tab sắp mở</strong>
-            <span class="muted">Bạn có thể chọn hoặc bỏ chọn từng tab trước khi mở.</span>
+
+          <section class="program-tabs-section" aria-labelledby="programTabsTitle">
+            <h2 id="programTabsTitle">Danh sách tab sắp mở</h2>
+            <p class="muted">Bạn có thể chọn hoặc bỏ chọn từng tab trước khi mở.</p>
+            <div class="tab-list">${tabItems || '<p class="muted">Chưa có URL hợp lệ cho buổi này.</p>'}</div>
+            <div class="popup-help" id="popupHelp">
+              Trình duyệt có thể đang chặn popup. Hãy cho phép mở cửa sổ cho trang này rồi thử lại.
+            </div>
+          </section>
+        </article>
+
+        <aside class="program-sidebar program-tab-sidebar" aria-label="Thao tác với danh sách tab">
+          <div class="program-sidebar-sticky">
+            <p class="program-sidebar-title">Thao tác</p>
+            <div class="program-tab-actions">
+              <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
+              <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
+              <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
+              <button class="button secondary" type="button" id="programViewCloseButton">Đóng</button>
+            </div>
           </div>
-          <div class="tab-list">${tabItems || '<p class="muted">Chưa có URL hợp lệ cho buổi này.</p>'}</div>
-          <div class="popup-help" id="popupHelp">
-            Trình duyệt có thể đang chặn popup. Hãy cho phép mở cửa sổ cho trang này rồi thử lại.
-          </div>
-        </div>
-        <div class="program-modal-actions">
-          <div class="program-prayer-actions" aria-label="Nhạc cầu nguyện">
-            <button class="button prayer-action-button" type="button" data-program-prayer="reflection">CN ngẫm nghĩ</button>
-            <button class="button prayer-action-button" type="button" data-program-prayer="our-wishes">CN chúng con mong muốn</button>
-            <button class="button prayer-action-button" type="button" data-program-prayer="united">CN thống thanh</button>
-          </div>
-          <div class="program-tab-actions">
-            <button class="button secondary" type="button" id="selectAllTabsButton">Chọn tất cả</button>
-            <button class="button secondary" type="button" id="clearAllTabsButton">Bỏ chọn tất cả</button>
-            <button class="button" type="button" id="openSelectedTabsButton">Mở các tab đã chọn</button>
-            <button class="button secondary" type="button" id="programModalCloseButton">Đóng</button>
-          </div>
-        </div>
+        </aside>
       </div>
     `;
 
@@ -348,7 +381,7 @@
     });
 
     document.getElementById("openSelectedTabsButton").addEventListener("click", openSelectedTabs);
-    document.getElementById("programModalCloseButton").addEventListener("click", closeProgramModal);
+    document.getElementById("programViewCloseButton").addEventListener("click", closeProgramView);
     content.querySelectorAll("[data-program-prayer]").forEach((button) => {
       button.addEventListener("click", () => playProgramPrayer(button.dataset.programPrayer));
     });
@@ -423,10 +456,10 @@
   function openQuickPrayerModal() {
     const overlay = document.getElementById("quickPrayerModalOverlay");
     const modal = document.getElementById("quickPrayerModal");
-    const programModal = document.getElementById("programModal");
+    const programWorkspace = document.getElementById("programWorkspace");
     prayerModalLastFocus = document.activeElement;
     setQuickPrayerLayout(window.matchMedia("(max-width: 700px)").matches);
-    programModal.setAttribute("aria-hidden", "true");
+    programWorkspace.setAttribute("aria-hidden", "true");
     overlay.hidden = false;
     document.body.classList.add("quick-prayer-open");
     modal.focus();
@@ -434,14 +467,14 @@
 
   function closeQuickPrayerModal() {
     const overlay = document.getElementById("quickPrayerModalOverlay");
-    const programModal = document.getElementById("programModal");
+    const programWorkspace = document.getElementById("programWorkspace");
 
     if (overlay.hidden) {
       return;
     }
 
     overlay.hidden = true;
-    programModal.removeAttribute("aria-hidden");
+    programWorkspace.removeAttribute("aria-hidden");
     document.body.classList.remove("quick-prayer-open");
 
     if (prayerModalLastFocus && typeof prayerModalLastFocus.focus === "function") {
@@ -449,9 +482,9 @@
     }
   }
 
-  function openProgramModal(serviceId) {
+  function openProgramView(serviceId) {
     const service = services.find((item) => item.id === serviceId);
-    const { overlay, modal } = getModalElements();
+    const { home, workspace } = getProgramElements();
 
     if (!service) {
       return;
@@ -459,16 +492,21 @@
 
     activeServiceId = serviceId;
     lastFocusedElement = document.activeElement;
-    renderProgramModal(service);
-    overlay.hidden = false;
-    document.body.classList.add("modal-open");
-    modal.focus();
+    renderProgramView(service);
+    home.hidden = true;
+    workspace.hidden = false;
+    document.body.classList.add("program-view-open");
+    window.scrollTo(0, 0);
+    document.getElementById("programPageTitle").focus({ preventScroll: true });
   }
 
-  function closeProgramModal() {
-    const { overlay } = getModalElements();
-    overlay.hidden = true;
-    document.body.classList.remove("modal-open");
+  function closeProgramView() {
+    const { home, workspace } = getProgramElements();
+    workspace.hidden = true;
+    home.hidden = false;
+    document.body.classList.remove("program-view-open");
+    activeServiceId = "";
+    window.scrollTo(0, 0);
 
     if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
       lastFocusedElement.focus();
@@ -477,7 +515,7 @@
 
   function openSelectedTabs() {
     const service = services.find((item) => item.id === activeServiceId);
-    const { content } = getModalElements();
+    const { content } = getProgramElements();
 
     if (!service) {
       setStatus("Chưa có buổi nào được chọn.", "error");
@@ -572,16 +610,9 @@
     }
   }
 
-  function bindModalEvents() {
-    const { overlay, closeIcon } = getModalElements();
+  function bindProgramEvents() {
+    const { workspace } = getProgramElements();
     const prayerOverlay = document.getElementById("quickPrayerModalOverlay");
-
-    closeIcon.addEventListener("click", closeProgramModal);
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
-        closeProgramModal();
-      }
-    });
 
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") {
@@ -593,8 +624,8 @@
         return;
       }
 
-      if (!overlay.hidden) {
-        closeProgramModal();
+      if (!workspace.hidden) {
+        closeProgramView();
       }
     });
 
@@ -619,7 +650,7 @@
 
     applyBackgroundFromConfig();
     renderServices();
-    bindModalEvents();
+    bindProgramEvents();
     setUpdatedAt("");
 
     window.SionRouteGuard.requireAuth().then((user) => {
