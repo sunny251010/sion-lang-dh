@@ -8,11 +8,11 @@
  * 3. Giu nguyen cac phan login, settings, wheels va helper con lai.
  *
  * Diem khac voi logic cu:
- * - Khong dung title "Buoi sang/Chieu/Toi" de phan loai.
- * - Doc title + helpText chi de lay TOAN BO NOI DUNG cua item.
- * - Nhan dien buoi tu cau:
+ * - Uu tien title "Buoi sang/Chieu/Toi" de phan loai.
+ * - Neu title khong ro rang, moi nhan dien buoi tu cau:
  *   "TU BAY GIO XIN TUYEN BO BAT DAU LE THO PHUONG BUOI ..."
  * - Lay gio tu cau "Dung 5h/19h30 Tuyen bo khai mac".
+ * - Neu gio mau thuan voi buoi, khong dua gio sai len nhan va tra canh bao.
  * - Khong doc va khong loc theo ngay thang trong noi dung.
  * - Ngay bi sai, da qua hoac khong duoc nhap deu khong anh huong.
  * - Neu co nhieu chuong trinh cung mot buoi, chon block dau tien tren Form.
@@ -84,9 +84,9 @@ function getGoogleFormUrl_() {
 /**
  * Doc cac item theo thu tu cua Form.
  *
- * Title khong duoc dung de quyet dinh ten buoi. Title va helpText chi
- * duoc noi lai thanh rawContent; detectWorshipSection_ chi tim cau
- * tuyen bo khai mac nam trong noi dung do.
+ * Title BUOI ... la nguon uu tien. Cau tuyen bo khai mac chi la fallback.
+ * Neu title va cau tuyen bo mau thuan, giu phan loai theo title va tra
+ * canh bao de nguoi dung sua lai Google Form.
  */
 function readFormProgramCandidates_() {
   const form = FormApp.openByUrl(getGoogleFormUrl_());
@@ -108,28 +108,49 @@ function readFormProgramCandidates_() {
       return;
     }
 
-    const detectedSection = detectWorshipSection_(
+    const headingSection = detectWorshipHeadingSection_(itemContent.title);
+    const declarationSection = detectWorshipSection_(
       normalizeText_(combinedContent)
     );
 
-    if (detectedSection) {
+    if (headingSection) {
       addProgramCandidate_(candidates, currentBlock);
       currentBlock = {
-        sectionId: detectedSection,
-        parts: [combinedContent]
+        sectionId: headingSection,
+        preferredLabel: extractHeadingLabel_(itemContent.title, headingSection),
+        parts: [combinedContent],
+        warnings: [],
+        hasDeclaration: Boolean(declarationSection)
       };
+
+      addSectionConflictWarning_(
+        currentBlock,
+        headingSection,
+        declarationSection
+      );
       return;
     }
 
-    // Mot section moi chi co tieu de BUOI ... la moc ket thuc block
-    // truoc do. Khong noi cac placeholder rong vao noi dung chuong trinh.
-    if (
-      currentBlock &&
-      itemContent.isSectionBoundary &&
-      isWorshipHeading_(itemContent.title)
-    ) {
+    if (declarationSection && currentBlock && !currentBlock.hasDeclaration) {
+      currentBlock.parts.push(combinedContent);
+      currentBlock.hasDeclaration = true;
+      addSectionConflictWarning_(
+        currentBlock,
+        currentBlock.sectionId,
+        declarationSection
+      );
+      return;
+    }
+
+    if (declarationSection) {
       addProgramCandidate_(candidates, currentBlock);
-      currentBlock = null;
+      currentBlock = {
+        sectionId: declarationSection,
+        preferredLabel: "",
+        parts: [combinedContent],
+        warnings: [],
+        hasDeclaration: true
+      };
       return;
     }
 
@@ -150,7 +171,12 @@ function addProgramCandidate_(candidates, block) {
   }
 
   const rawContent = block.parts.filter(Boolean).join("\n").trim();
-  const candidate = parseProgramBlock_(block.sectionId, rawContent);
+  const candidate = parseProgramBlock_(
+    block.sectionId,
+    rawContent,
+    block.warnings,
+    block.preferredLabel
+  );
 
   if (candidate) {
     candidates.push(candidate);
@@ -160,9 +186,23 @@ function addProgramCandidate_(candidates, block) {
 /**
  * Ngay thang (neu co) chi la noi dung hien thi, khong duoc dung de loc.
  */
-function parseProgramBlock_(sectionId, rawContent) {
+function parseProgramBlock_(sectionId, rawContent, warnings, preferredLabel) {
   const normalizedContent = String(rawContent || "").trim();
-  const startTime = extractOpeningTime_(normalizedContent);
+  const detectedTime = extractOpeningTime_(normalizedContent);
+  const candidateWarnings = Array.isArray(warnings)
+    ? warnings.slice()
+    : [];
+  const startTime = isOpeningTimeCompatible_(sectionId, detectedTime)
+    ? detectedTime
+    : "";
+
+  if (detectedTime && !startTime) {
+    candidateWarnings.push(
+      "Giờ khai mạc " + detectedTime +
+      " không phù hợp với " + getSectionDisplayName_(sectionId) +
+      ". Hệ thống đã bỏ giờ khỏi nhãn; hãy kiểm tra lại Google Form."
+    );
+  }
 
   if (
     !sectionId ||
@@ -176,8 +216,64 @@ function parseProgramBlock_(sectionId, rawContent) {
     sectionId: sectionId,
     rawContent: normalizedContent,
     startTime: startTime,
-    label: extractProgramLabel_(normalizedContent, sectionId)
+    label: preferredLabel || extractProgramLabel_(normalizedContent, sectionId),
+    warnings: candidateWarnings
   };
+}
+
+function getSectionFamily_(sectionId) {
+  return sectionId === "tuesday" ? "evening" : sectionId;
+}
+
+function getSectionDisplayName_(sectionId) {
+  if (sectionId === "morning") {
+    return "Buổi sáng/Buổi mai";
+  }
+
+  if (sectionId === "afternoon") {
+    return "Buổi chiều";
+  }
+
+  return "Buổi tối";
+}
+
+function addSectionConflictWarning_(block, headingSection, declarationSection) {
+  if (
+    !block ||
+    !headingSection ||
+    !declarationSection ||
+    getSectionFamily_(headingSection) === getSectionFamily_(declarationSection)
+  ) {
+    return;
+  }
+
+  block.warnings.push(
+    "Tiêu đề là " + getSectionDisplayName_(headingSection) +
+    " nhưng câu tuyên bố ghi " + getSectionDisplayName_(declarationSection) +
+    ". Hệ thống ưu tiên tiêu đề; hãy kiểm tra lại Google Form."
+  );
+}
+
+function isOpeningTimeCompatible_(sectionId, startTime) {
+  if (!startTime) {
+    return true;
+  }
+
+  const hour = Number(String(startTime).split("h")[0]);
+
+  if (!Number.isInteger(hour)) {
+    return false;
+  }
+
+  if (sectionId === "morning") {
+    return hour >= 0 && hour < 12;
+  }
+
+  if (sectionId === "afternoon") {
+    return hour >= 12 && hour < 18;
+  }
+
+  return hour >= 18 && hour <= 23;
 }
 
 function hasMeaningfulProgramContent_(content, startTime) {
@@ -228,7 +324,7 @@ function selectProgramSet_(candidates) {
 
 function buildServiceFromCandidate_(id, baseLabel, candidate) {
   if (!candidate) {
-    return buildService_(id, baseLabel, "", "", null);
+    return buildService_(id, baseLabel, "", "", null, []);
   }
 
   return buildService_(
@@ -236,7 +332,8 @@ function buildServiceFromCandidate_(id, baseLabel, candidate) {
     candidate.label || baseLabel,
     candidate.rawContent,
     candidate.startTime,
-    null
+    null,
+    candidate.warnings
   );
 }
 
@@ -278,6 +375,58 @@ function detectWorshipSection_(normalizedContent) {
   }
 
   return null;
+}
+
+/**
+ * Nhan dien title ngan cua Form. Title duoc uu tien hon cau tuyen bo vi
+ * nguoi nhap thuong sao chep noi dung cu va quen sua cau tuyen bo ben duoi.
+ */
+function detectWorshipHeadingSection_(title) {
+  const text = normalizeText_(title);
+
+  if (/^BUOI TOI THU (?:3|BA) TINH SACH\b/.test(text)) {
+    return "tuesday";
+  }
+
+  if (/^BUOI (?:MAI|SANG)\b/.test(text)) {
+    return "morning";
+  }
+
+  if (/^BUOI CHIEU\b/.test(text)) {
+    return "afternoon";
+  }
+
+  if (/^BUOI TOI\b/.test(text)) {
+    return "evening";
+  }
+
+  return null;
+}
+
+function extractHeadingLabel_(title, sectionId) {
+  const text = normalizeText_(title);
+
+  if (sectionId === "morning") {
+    return /^BUOI MAI\b/.test(text) ? "Buổi mai" : "Buổi sáng";
+  }
+
+  if (sectionId === "afternoon") {
+    return "Buổi chiều";
+  }
+
+  if (sectionId === "tuesday") {
+    return "Buổi tối Thứ Ba Tinh Sạch";
+  }
+
+  if (/^BUOI TOI[^\n]{0,140}TUAN LE CAU NGUYEN\b/.test(text)) {
+    return "Buổi tối Tuần lễ Cầu nguyện";
+  }
+
+  if (/^BUOI TOI[^\n]{0,140}SABAT\b/.test(text)) {
+    return "Buổi tối Sabat";
+  }
+
+  return "Buổi tối";
 }
 
 function isWorshipHeading_(title) {
@@ -426,7 +575,7 @@ function normalizeText_(text) {
     .trim();
 }
 
-function buildService_(id, label, rawContent, startTime, programDate) {
+function buildService_(id, label, rawContent, startTime, programDate, warnings) {
   const normalizedContent = String(rawContent || "").trim();
   const normalizedTime = String(startTime || "").trim();
 
@@ -452,7 +601,8 @@ function buildService_(id, label, rawContent, startTime, programDate) {
 
     rawContent: normalizedContent,
     startTime: normalizedTime,
-    programDate: formatProgramDate_(programDate)
+    programDate: formatProgramDate_(programDate),
+    warnings: Array.isArray(warnings) ? warnings : []
   };
 }
 
@@ -528,6 +678,12 @@ function getQuickProgramSelfTestResults_() {
     "TỪ BÂY GIỜ XIN TUYÊN BỐ BẮT ĐẦU LỄ THỜ PHƯỢNG BUỔI CHIỀU SABAT",
     "Ngày 13 tháng 09 năm 2026"
   ].join("\n");
+  const copiedAfternoonContent = [
+    "BUỔI CHIỀU ĐẠI LỄ CHUỘC TỘI",
+    "1/ Hát BCM: 291 - 296 - 308 chuẩn bị trước giờ khai mạc",
+    "2/ Đúng 10h Tuyên bố khai mạc:",
+    "TỪ BÂY GIỜ XIN TUYÊN BỐ BẮT ĐẦU LỄ THỜ PHƯỢNG BUỔI SÁNG ĐẠI LỄ CHUỘC TỘI"
+  ].join("\n");
 
   const morningSection = detectWorshipSection_(normalizeText_(morningContent));
   const eveningSection = detectWorshipSection_(normalizeText_(eveningContent));
@@ -537,6 +693,29 @@ function getQuickProgramSelfTestResults_() {
   const afternoon = parseProgramBlock_(afternoonSection, afternoonContent);
   const expired = parseProgramBlock_(eveningSection, expiredContent);
   const noDate = parseProgramBlock_(eveningSection, noDateContent);
+  const copiedAfternoonHeadingSection = detectWorshipHeadingSection_(
+    "BUỔI CHIỀU ĐẠI LỄ CHUỘC TỘI"
+  );
+  const copiedAfternoonDeclarationSection = detectWorshipSection_(
+    normalizeText_(copiedAfternoonContent)
+  );
+  const copiedAfternoonBlock = {
+    warnings: []
+  };
+  addSectionConflictWarning_(
+    copiedAfternoonBlock,
+    copiedAfternoonHeadingSection,
+    copiedAfternoonDeclarationSection
+  );
+  const copiedAfternoon = parseProgramBlock_(
+    copiedAfternoonHeadingSection,
+    copiedAfternoonContent,
+    copiedAfternoonBlock.warnings,
+    extractHeadingLabel_(
+      "BUỔI CHIỀU ĐẠI LỄ CHUỘC TỘI",
+      copiedAfternoonHeadingSection
+    )
+  );
   const selectedFestivalPrograms = selectProgramSet_([
     morning,
     afternoon,
@@ -579,6 +758,27 @@ function getQuickProgramSelfTestResults_() {
     {
       name: "Nhan dien duoc buoi chieu",
       passed: afternoonSection === "afternoon"
+    },
+    {
+      name: "Title buoi chieu duoc uu tien khi cau tuyen bo ghi buoi sang",
+      passed:
+        copiedAfternoonHeadingSection === "afternoon" &&
+        copiedAfternoonDeclarationSection === "morning" &&
+        Boolean(copiedAfternoon) &&
+        copiedAfternoon.sectionId === "afternoon"
+    },
+    {
+      name: "Gio 10h sai voi buoi chieu khong duoc dua len nhan",
+      passed:
+        Boolean(copiedAfternoon) &&
+        copiedAfternoon.startTime === "" &&
+        copiedAfternoon.label === "Buổi chiều"
+    },
+    {
+      name: "Du lieu mau thuan tra canh bao",
+      passed:
+        Boolean(copiedAfternoon) &&
+        copiedAfternoon.warnings.length === 2
     },
     {
       name: "Co ngay cu van duoc giu lai",
@@ -641,4 +841,8 @@ function testQuickProgramParser_() {
   }
 
   return result;
+}
+
+function testQuickProgramParser() {
+  return testQuickProgramParser_();
 }

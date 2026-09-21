@@ -4,7 +4,7 @@
   const prayerLibrary = Array.isArray(window.PRAYER_AUDIO_LIBRARY)
     ? window.PRAYER_AUDIO_LIBRARY
     : [];
-  const PROGRAM_CACHE_KEY = `${config.PROGRAM_CACHE_KEY}:v2`;
+  const PROGRAM_CACHE_KEY = `${config.PROGRAM_CACHE_KEY}:v3`;
   const SERVICE_PRESENTATION = {
     morning: { label: "Buổi sáng", tag: "Sáng", icon: "S" },
     afternoon: { label: "Buổi chiều", tag: "Chiều", icon: "C" },
@@ -245,6 +245,7 @@
     servicesContainer.innerHTML = sortServices(services)
       .map((service) => {
         const presentation = getPresentation(service);
+        const warnings = Array.isArray(service.warnings) ? service.warnings : [];
         const songChips = (service.songs || [])
           .map((songNumber) => `<span class="chip">${escapeHtml(songNumber)}</span>`)
           .join("");
@@ -259,6 +260,7 @@
               </div>
             </div>
             <p class="muted">${escapeHtml(summarizeService(service))}</p>
+            ${warnings.length ? '<p class="service-data-warning">Cần kiểm tra dữ liệu Form</p>' : ""}
             <div class="chip-row" aria-label="Bài ca">${songChips || '<span class="chip">Chưa có bài ca</span>'}</div>
           </button>
         `;
@@ -300,6 +302,10 @@
     const songSummary = Array.isArray(service.songs) && service.songs.length
       ? service.songs.join(" - ")
       : "Chưa có bài ca";
+    const warnings = Array.isArray(service.warnings) ? service.warnings : [];
+    const warningItems = warnings
+      .map((warning) => `<li>${escapeHtml(warning)}</li>`)
+      .join("");
     const targets = buildTabTargets(service);
     const tabItems = targets
       .map((target, index) => `
@@ -335,6 +341,13 @@
             <h1 id="programPageTitle" tabindex="-1">${escapeHtml(shortLabel)}</h1>
             <p class="program-song-line"><strong>Bài ca mới:</strong> ${escapeHtml(songSummary)}</p>
           </header>
+
+          ${warningItems ? `
+            <section class="program-data-warning" role="status" aria-label="Cảnh báo dữ liệu Google Form">
+              <strong>Cần kiểm tra dữ liệu Google Form</strong>
+              <ul>${warningItems}</ul>
+            </section>
+          ` : ""}
 
           ${service.openingText ? `<div class="announcement">${escapeHtml(service.openingText)}</div>` : ""}
           ${service.rawContent ? `
