@@ -1,4 +1,4 @@
-# Sion Làng Đại Học
+# Worship Online
 
 Website tinh gon de ho tro chuan bi sinh hoat Sabat. Frontend nam trong `docs/` de deploy bang GitHub Pages, backend Apps Script nam trong `backend/` nhu source backup.
 

@@ -14,7 +14,7 @@ window.APP_CONFIG = {
     role: "guest",
     authProvider: "disabled"
   },
-  DEFAULT_SITE_NAME: "Sion Làng Đại Học",
+  DEFAULT_SITE_NAME: "Worship Online",
   DEFAULT_HOME_HERO_IMAGE: "./assets/images/home-hero.jpg",
   DEFAULT_LOGIN_BACKGROUND: "./assets/images/login-background.jpg",
   TEACHING_DRAW_BACKGROUND: "./assets/images/teaching-draw-background.jpg",
